@@ -282,26 +282,26 @@ void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
     progpow_code += std::string(cl_progpow_miner_kernel(), sizeof_cl_progpow_miner_kernel());
 
 #ifdef _DEVELOPER
-
-    // Save generated source for debug purpouses
-
-    std::string fileName =
-        "kernel-" + to_string(m_index) + "-" + to_string(_block / PROGPOW_PERIOD) + ".cl";
-    std::string tmpDir;
+    if (g_logOptions & LOG_COMPILE)
+    {
+        // Save generated source for debug purpouses
+        std::string fileName =
+            "kernel-" + to_string(m_index) + "-" + to_string(_block / PROGPOW_PERIOD) + ".cl";
+        std::string tmpDir;
 
 #ifdef _WIN32
-    tmpDir = getenv("TEMP");
-    tmpDir.append("\\");
+        tmpDir = getenv("TEMP");
+        tmpDir.append("\\");
 #else
-    tmpDir = "/tmp/";
+        tmpDir = "/tmp/";
 #endif
 
-    std::string tmpFile = tmpDir + fileName;
-    ofstream write;
-    write.open(tmpFile);
-    write << progpow_code;
-    write.close();
-
+        std::string tmpFile = tmpDir + fileName;
+        ofstream write;
+        write.open(tmpFile);
+        write << progpow_code;
+        write.close();
+    }
 #endif  // _DEVELOPER
 
 

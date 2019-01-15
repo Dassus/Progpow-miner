@@ -207,30 +207,30 @@ void CUDAMiner::compileProgPoWKernel(int _block, int _dagelms)
     text += std::string(cu_progpow_miner_kernel(), sizeof_cu_progpow_miner_kernel());
 
 #ifdef _DEVELOPER
-
-    // Save generated source for debug purpouses
-
-    std::string fileName =
-        "kernel-" + to_string(m_index) + "-" + to_string(_block / PROGPOW_PERIOD) + ".cu";
-    std::string tmpDir;
+    if (g_logOptions & LOG_COMPILE)
+    {
+        // Save generated source for debug purpouses
+        std::string fileName =
+            "kernel-" + to_string(m_index) + "-" + to_string(_block / PROGPOW_PERIOD) + ".cu";
+        std::string tmpDir;
 
 #ifdef _WIN32
-    tmpDir = getenv("TEMP");
-    tmpDir.append("\\");
+        tmpDir = getenv("TEMP");
+        tmpDir.append("\\");
 #else
-    tmpDir = "/tmp/";
-#endif 
+        tmpDir = "/tmp/";
+#endif
 
-    std::string tmpFile = tmpDir + fileName;
-    ofstream write;
-    write.open(tmpFile);
-    write << text;
-    write.close();
-
+        std::string tmpFile = tmpDir + fileName;
+        ofstream write;
+        write.open(tmpFile);
+        write << text;
+        write.close();
+    }
 #endif  // _DEVELOPER
 
 
-        nvrtcProgram prog;
+    nvrtcProgram prog;
     NVRTC_SAFE_CALL(nvrtcCreateProgram(&prog,  // prog
         text.c_str(),                          // buffer
         "kernel.cu",                           // name
