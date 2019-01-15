@@ -125,7 +125,6 @@ bool CUDAMiner::initEpoch_internal()
                 CUDA_SAFE_CALL(cudaMallocHost(&m_search_results.at(i), sizeof(search_results)));
                 CUDA_SAFE_CALL(cudaStreamCreateWithFlags(&m_streams.at(i), cudaStreamNonBlocking));
             }
-
         }
         else
         {
@@ -207,14 +206,31 @@ void CUDAMiner::compileProgPoWKernel(int _block, int _dagelms)
     std::string text = ProgPow::getKern(_block, _dagelms, ProgPow::KERNEL_CUDA);
     text += std::string(cu_progpow_miner_kernel(), sizeof_cu_progpow_miner_kernel());
 
-    // Keep only for reference in case it's needed to examine
-    // the generated cu file. Runtime does not need this
-    // ofstream write;
-    // write.open("kernel.cu");
-    // write << text;
-    // write.close();
+#ifdef _DEVELOPER
 
-    nvrtcProgram prog;
+    // Save generated source for debug purpouses
+
+    std::string fileName =
+        "kernel-" + to_string(m_index) + "-" + to_string(_block / PROGPOW_PERIOD) + ".cu";
+    std::string tmpDir;
+
+#ifdef _WIN32
+    tmpDir = getenv("TEMP");
+    tmpDir.append("\\");
+#else
+    tmpDir = "/tmp/";
+#endif 
+
+    std::string tmpFile = tmpDir + fileName;
+    ofstream write;
+    write.open(tmpFile);
+    write << text;
+    write.close();
+
+#endif  // _DEVELOPER
+
+
+        nvrtcProgram prog;
     NVRTC_SAFE_CALL(nvrtcCreateProgram(&prog,  // prog
         text.c_str(),                          // buffer
         "kernel.cu",                           // name
@@ -230,7 +246,7 @@ void CUDAMiner::compileProgPoWKernel(int _block, int _dagelms)
     const char* opts[] = {op_arch.c_str(),
         // op_dag.c_str(),
         // "-lineinfo",      // For debug only
-        "-use_fast_math"/*, "-default-device"*/};
+        "-use_fast_math" /*, "-default-device"*/};
     nvrtcResult compileResult = nvrtcCompileProgram(prog,  // prog
         2,                                                 // numOptions
         opts);                                             // options
@@ -404,7 +420,7 @@ void CUDAMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollecti
 void CUDAMiner::ethash_search()
 {
     using namespace std::chrono;
-    
+
     m_workSearchDuration = 0;
     m_workHashes = 0;
 
@@ -433,7 +449,7 @@ void CUDAMiner::ethash_search()
         cudaStream_t stream = m_streams.at(streamIndex);
 
         volatile search_results& buffer(*m_search_results.at(streamIndex));
-        
+
         if (launchIndex >= m_settings.streams || !m_new_work.load(memory_order_relaxed))
         {
             if (m_active_streams.test(streamIndex))
@@ -450,7 +466,6 @@ void CUDAMiner::ethash_search()
 
         if (!m_new_work.load(memory_order_relaxed))
         {
-
             if (launchIndex == 1)
             {
                 m_workSearchStart = steady_clock::now();
@@ -495,9 +510,7 @@ void CUDAMiner::ethash_search()
 
         if (!m_active_streams.any())
             break;
-
     }
-
 }
 
 void CUDAMiner::progpow_search()
@@ -512,7 +525,7 @@ void CUDAMiner::progpow_search()
     uint64_t startNonce, target;
 
     startNonce = m_work_active.startNonce;
-    
+
     hash32_t header = *reinterpret_cast<hash32_t const*>(m_work_active.header.data());
     CUDA_SAFE_CALL(cudaMemcpy(d_pheader, &header, sizeof(hash32_t), cudaMemcpyHostToDevice));
 
@@ -606,7 +619,5 @@ void CUDAMiner::progpow_search()
 
         if (!m_active_streams.any())
             break;
-
     }
-
 }
