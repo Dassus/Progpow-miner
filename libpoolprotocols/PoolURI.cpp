@@ -339,6 +339,8 @@ URI::URI(std::string uri, bool _sim) : m_uri{std::move(uri)}
             {
                 if (tuplet.at(0) == "algo")
                     url_decode(tuplet.at(1), m_algo);
+                if (tuplet.at(0) == "coin")
+                    url_decode(tuplet.at(1), m_coin);
             }
         }
     }
