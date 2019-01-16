@@ -281,30 +281,6 @@ void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
     std::string progpow_code = ProgPow::getKern(_block, _dagelms, ProgPow::KERNEL_CL);
     progpow_code += std::string(cl_progpow_miner_kernel(), sizeof_cl_progpow_miner_kernel());
 
-#ifdef _DEVELOPER
-    if (g_logOptions & LOG_COMPILE)
-    {
-        // Save generated source for debug purpouses
-        std::string fileName =
-            "kernel-" + to_string(m_index) + "-" + to_string(_block / PROGPOW_PERIOD) + ".cl";
-        std::string tmpDir;
-
-#ifdef _WIN32
-        tmpDir = getenv("TEMP");
-        tmpDir.append("\\");
-#else
-        tmpDir = "/tmp/";
-#endif
-
-        std::string tmpFile = tmpDir + fileName;
-        ofstream write;
-        write.open(tmpFile);
-        write << progpow_code;
-        write.close();
-    }
-#endif  // _DEVELOPER
-
-
     char options[256];
     int computeCapability = 0;
     int maxRegs = 0;
@@ -336,6 +312,30 @@ void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
         sprintf(options, "%s", "");
         break;
     }
+
+
+#ifdef _DEVELOPER
+    if (g_logOptions & LOG_COMPILE)
+    {
+        // Save generated source for debug purpouses
+        std::string fileName =
+            "kernel-" + to_string(m_index) + "-" + to_string(_block / PROGPOW_PERIOD) + ".cl";
+        std::string tmpDir;
+
+#ifdef _WIN32
+        tmpDir = getenv("TEMP");
+        tmpDir.append("\\");
+#else
+        tmpDir = "/tmp/";
+#endif
+
+        std::string tmpFile = tmpDir + fileName;
+        ofstream write;
+        write.open(tmpFile);
+        write << progpow_code;
+        write.close();
+    }
+#endif  // _DEVELOPER
 
     cl::Program::Sources progpow_sources{{progpow_code.data(), progpow_code.size()}};
     cl::Program progpow_program(m_context, progpow_sources);
