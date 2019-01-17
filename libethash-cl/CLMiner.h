@@ -69,14 +69,14 @@ namespace eth
 // ethash.cl
 typedef struct
 {
-    unsigned int count;
-    unsigned int abort;
-    unsigned int rounds;
+    uint32_t count;
+    uint32_t abort;
+    uint32_t rounds;
     struct
     {
-        // One word for gid and 8 for mix hash
-        unsigned long nonce;
-        unsigned int mix[8];
+        // 64-bit nonce and 8 words for mix hash
+        uint64_t nonce;
+        uint32_t mix[8];
     } result[MAX_SEARCH_RESULTS];
 } search_results;
 
