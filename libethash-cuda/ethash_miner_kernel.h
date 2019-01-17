@@ -38,7 +38,7 @@ typedef struct
     uint32_t count;
     struct
     {
-        // One word for gid and 8 for mix hash
+        // 64-bit nonce and 8 words for mix hash
         uint64_t nonce;
         uint32_t mix[8];
     } result[MAX_SEARCH_RESULTS];
