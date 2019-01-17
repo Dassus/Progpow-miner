@@ -222,6 +222,7 @@ void CUDAMiner::compileProgPoWKernel(int _block, int _dagelms)
 #endif
 
         std::string tmpFile = tmpDir + fileName;
+        cudalog << "Dumping kernel to : " << tmpFile;
         ofstream write;
         write.open(tmpFile);
         write << text;

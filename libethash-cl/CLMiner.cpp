@@ -330,6 +330,7 @@ void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
 #endif
 
         std::string tmpFile = tmpDir + fileName;
+        cllog << "Dumping kernel to : " << tmpFile;
         ofstream write;
         write.open(tmpFile);
         write << progpow_code;
