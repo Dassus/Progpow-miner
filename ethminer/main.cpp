@@ -327,12 +327,16 @@ public:
 
         app.add_option("--opencl-device,--opencl-devices,--cl-devices", m_CLSettings.devices, "");
 
+        app.add_option("--cl-platforms", m_ClPlatforms, "");
+
         app.add_option("--cl-global-work", m_CLSettings.globalWorkSizeMultiplier, "", true)
             ->check(CLI::Range(32, 65536));
 
         app.add_set("--cl-local-work", m_CLSettings.localWorkSize, {64, 128, 256}, "", true);
 
         app.add_flag("--cl-nobin", m_CLSettings.noBinary, "");
+
+        app.add_flag("--cl-list-platforms", m_shouldListClPlatforms, "");
 
 #endif
 
@@ -460,7 +464,7 @@ public:
             m_mode = OperationMode::Mining;
         }
 
-        if (!m_shouldListDevices && m_mode != OperationMode::Simulation)
+        if (!m_shouldListDevices && !m_shouldListClPlatforms && m_mode != OperationMode::Simulation)
         {
             if (!pools.size())
                 throw std::invalid_argument(
@@ -546,8 +550,15 @@ public:
     void execute()
     {
 #if _OPENCL
+
+        if (m_shouldListClPlatforms)
+        {
+            CLMiner::enumPlatforms();
+            return;
+        }
+
         if (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed)
-            CLMiner::enumDevices(m_DevicesCollection);
+            CLMiner::enumDevices(m_DevicesCollection, m_ClPlatforms);
 #endif
 #if _CUDA
         if (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed)
@@ -674,10 +685,10 @@ public:
             return;
         }
 
-            // Subscribe devices with appropriate Miner Type
-            // Use CUDA first when available then, as second, OpenCL
+        // Subscribe devices with appropriate Miner Type
+        // Use CUDA first when available then, as second, OpenCL
 
-            // Apply discrete subscriptions (if any)
+        // Apply discrete subscriptions (if any)
 #if _CUDA
         if (m_CUSettings.devices.size() &&
             (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed))
@@ -731,7 +742,7 @@ public:
 #endif
 
 
-            // Subscribe all detected devices
+        // Subscribe all detected devices
 #if _CUDA
         if (!m_CUSettings.devices.size() &&
             (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed))
@@ -925,6 +936,13 @@ public:
                  << endl
                  << "    Use this extended OpenCL arguments to fine tune the performance." << endl
                  << "    Be advised default values are best generic findings by developers" << endl
+                 << endl
+                 << "    --cl-list-platforms FLAG" << endl
+                 << "                        Enumerates available OpenCL Platforms and exit" << endl
+                 << endl
+                 << "    --cl-platforms      UINT {} Default not set" << endl
+                 << "                        Limits usage of OpenCL Platforms." << endl
+                 << "                        Use --cl-list-platforms to enumerate them"
                  << endl
                  << "    --cl-devices        UINT {} Default not set" << endl
                  << "                        Space separated list of device indexes to use" << endl
@@ -1259,7 +1277,10 @@ private:
     // Mining options
     MinerType m_minerType = MinerType::Mixed;
     OperationMode m_mode = OperationMode::None;
-    bool m_shouldListDevices = false;
+
+    bool m_shouldListDevices = false;      // List devices and exit
+    bool m_shouldListClPlatforms = false;  // List CL Platforms and exit
+    vector<unsigned> m_ClPlatforms;        // Limit theese CL Platforms
 
     FarmSettings m_FarmSettings = FarmSettings();  // Operating settings for Farm
     PoolSettings m_PoolSettings = PoolSettings();  // Operating settings for PoolManager
@@ -1291,12 +1312,12 @@ private:
 
 int main(int argc, char** argv)
 {
-// Return values
-// 0 - Normal exit
-// 1 - Invalid/Insufficient command line arguments
-// 2 - Runtime error
-// 3 - Other exceptions
-// 4 - Possible corruption
+    // Return values
+    // 0 - Normal exit
+    // 1 - Invalid/Insufficient command line arguments
+    // 2 - Runtime error
+    // 3 - Other exceptions
+    // 4 - Possible corruption
 
 #if defined(_WIN32)
     // Need to change the code page from the default OEM code page (437) so that

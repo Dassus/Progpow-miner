@@ -375,7 +375,7 @@ void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
           << " ms. ";
 }
 
-void CLMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection)
+void CLMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection, std::vector<unsigned>& _platforms)
 {
     // Load available platforms
     vector<cl::Platform> platforms = getPlatforms();
@@ -385,6 +385,13 @@ void CLMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection
     unsigned int dIdx = 0;
     for (unsigned int pIdx = 0; pIdx < platforms.size(); pIdx++)
     {
+        // Skip platforms the user has not explicitly requested
+        if (_platforms.size())
+        {
+            if (std::find(_platforms.begin(), _platforms.end(), pIdx) == _platforms.end())
+                continue;
+        }
+
         std::string platformName = platforms.at(pIdx).getInfo<CL_PLATFORM_NAME>();
         ClPlatformTypeEnum platformType = ClPlatformTypeEnum::Unknown;
         if (platformName == "AMD Accelerated Parallel Processing")
@@ -512,6 +519,29 @@ void CLMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection
             ++dIdx;
         }
     }
+}
+
+void CLMiner::enumPlatforms()
+{
+    // Load available platforms
+    vector<cl::Platform> platforms = getPlatforms();
+    if (platforms.empty())
+        return;
+
+    std::cout << " Available OpenCL platforms :" << std::endl;
+
+    for (unsigned int pIdx = 0; pIdx < platforms.size(); pIdx++)
+    {
+
+        std::string platformName = platforms.at(pIdx).getInfo<CL_PLATFORM_NAME>();
+        std::string platformVendor = platforms.at(pIdx).getInfo<CL_PLATFORM_VENDOR>();
+        std::string platformVersion = platforms.at(pIdx).getInfo<CL_PLATFORM_VERSION>();
+
+        std::cout << " " << pIdx << " " << platformName << " (" << platformVendor << ") "
+            << platformVersion << std::endl;
+
+    }
+
 }
 
 void CLMiner::kick_miner()
@@ -782,22 +812,21 @@ void CLMiner::ethash_search()
 
     volatile search_results results;
 
-    
+
     m_workSearchStart = steady_clock::now();
 
 #ifdef _DEVELOPER
     // Optionally log job switch time
     if (g_logOptions & LOG_SWITCH)
         cllog << "Switch time: "
-                << std::chrono::duration_cast<std::chrono::milliseconds>(
-                       std::chrono::steady_clock::now() - m_workSwitchStart)
-                       .count()
-                << " ms.";
+              << std::chrono::duration_cast<std::chrono::milliseconds>(
+                     std::chrono::steady_clock::now() - m_workSwitchStart)
+                     .count()
+              << " ms.";
 #endif
 
     while (true)
     {
-
         if (m_activeKernel.load(memory_order_relaxed))
         {
             if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Nvidia)
@@ -857,12 +886,10 @@ void CLMiner::ethash_search()
             m_workHashes += (m_settings.localWorkSize * results.rounds);
 
             startNonce = m_workHashes + 1;
-
         }
 
         if (!m_new_work.load(memory_order_relaxed))
         {
-
             // Zero the results count (in device)
             m_queue.enqueueWriteBuffer(m_searchBuffer, CL_FALSE, offsetof(search_results, count),
                 sizeof(m_zerox3), (void*)&m_zerox3);
@@ -873,13 +900,11 @@ void CLMiner::ethash_search()
             start = clock::now();
             m_queue.enqueueNDRangeKernel(m_ethash_search_kernel, cl::NullRange,
                 m_settings.globalWorkSize, m_settings.localWorkSize);
-            
         }
 
         // Submit solutions while kernel is running (if any)
         if (found_count)
         {
-            
             for (uint32_t i = 0; i < found_count; i++)
             {
                 h256 mix;
@@ -901,7 +926,6 @@ void CLMiner::ethash_search()
 
         if (!m_activeKernel.load(memory_order_relaxed))
             break;
-
     }
 
     m_queue.finish();
@@ -921,7 +945,7 @@ void CLMiner::progpow_search()
         m_header, CL_FALSE, 0, m_work_active.header.size, m_work_active.header.data());
     m_progpow_search_kernel.setArg(1, m_header);
 
-    
+
     uint64_t startNonce, target;
     uint32_t found_count = 0;
     startNonce = m_work_active.startNonce;
@@ -1015,12 +1039,10 @@ void CLMiner::progpow_search()
             m_workHashes += (m_settings.localWorkSize * results.rounds);
 
             startNonce += m_workHashes + 1;
-
         }
 
         if (!m_new_work.load(memory_order_relaxed))
         {
-            
             // Zero the results count (in device)
             m_queue.enqueueWriteBuffer(m_searchBuffer, CL_FALSE, offsetof(search_results, count),
                 sizeof(m_zerox3), (void*)&m_zerox3);
@@ -1031,13 +1053,11 @@ void CLMiner::progpow_search()
             start = clock::now();
             m_queue.enqueueNDRangeKernel(m_progpow_search_kernel, cl::NullRange,
                 m_settings.globalWorkSize, m_settings.localWorkSize);
-
         }
 
         // Submit solutions while kernel is running (if any)
         if (found_count)
         {
-            
             for (uint32_t i = 0; i < found_count; i++)
             {
                 h256 mix;

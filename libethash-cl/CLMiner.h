@@ -87,7 +87,8 @@ public:
     CLMiner(unsigned _index, CLSettings _settings, DeviceDescriptor& _device);
     ~CLMiner() override = default;
 
-    static void enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection);
+    static void enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection, std::vector<unsigned>& _platforms);
+    static void enumPlatforms();
 
     void kick_miner() override;
 
