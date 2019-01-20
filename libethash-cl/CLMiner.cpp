@@ -373,7 +373,12 @@ void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
     {
         // Save generated source for debug purpouses
         std::string fileName =
-            "kernel-" + to_string(m_index) + "-" + to_string(_block / PROGPOW_PERIOD) + ".cl.ptx";
+            "kernel-" + to_string(m_index) + "-" + to_string(_block / PROGPOW_PERIOD) + ".cl.";
+        if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Nvidia)
+            fileName.append("ptx");
+        else
+            fileName.append("bin");
+
         std::string tmpDir;
 
 #ifdef _WIN32
@@ -393,7 +398,7 @@ void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
             progpow_program.get(), CL_PROGRAM_BINARIES, sizeof(unsigned char*), &bin, NULL);
 
         std::string tmpFile = tmpDir + fileName;
-        cllog << "Dumping ptx to : " << tmpFile;
+        cllog << "Dumping binaries to : " << tmpFile;
         ofstream write;
         write.open(tmpFile);
         write << bin;
