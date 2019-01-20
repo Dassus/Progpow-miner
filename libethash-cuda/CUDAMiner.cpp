@@ -234,7 +234,7 @@ void CUDAMiner::compileProgPoWKernel(int _block, int _dagelms)
     nvrtcProgram prog;
     NVRTC_SAFE_CALL(nvrtcCreateProgram(&prog,  // prog
         text.c_str(),                          // buffer
-        "kernel.cu",                           // name
+        NULL,                                  // name
         0,                                     // numHeaders
         NULL,                                  // headers
         NULL));                                // includeNames
@@ -275,11 +275,30 @@ void CUDAMiner::compileProgPoWKernel(int _block, int _dagelms)
     char* ptx = new char[ptxSize];
     NVRTC_SAFE_CALL(nvrtcGetPTX(prog, ptx));
 
-    // Keep only for reference in case it's needed to examine
-    // the generated ptx file. Runtime does not need this
-    // write.open("kernel.ptx");
-    // write << ptx;
-    // write.close();
+#ifdef _DEVELOPER
+    if (g_logOptions & LOG_COMPILE)
+    {
+        // Save generated source for debug purpouses
+        std::string fileName =
+            "kernel-" + to_string(m_index) + "-" + to_string(_block / PROGPOW_PERIOD) + ".cu.ptx";
+        std::string tmpDir;
+
+#ifdef _WIN32
+        tmpDir = getenv("TEMP");
+        tmpDir.append("\\");
+#else
+        tmpDir = "/tmp/";
+#endif
+
+        std::string tmpFile = tmpDir + fileName;
+        cudalog << "Dumping ptx to : " << tmpFile;
+        ofstream write;
+        write.open(tmpFile);
+        write << ptx;
+        write.close();
+    }
+#endif  // _DEVELOPER
+
 
     // Load the generated PTX and get a handle to the kernel.
     char* jitInfo = new char[32 * 1024];

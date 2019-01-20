@@ -368,6 +368,40 @@ void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
         throw std::runtime_error("Unable to build ProgPoW Kernel");
     }
 
+#ifdef _DEVELOPER
+    if (g_logOptions & LOG_COMPILE)
+    {
+        // Save generated source for debug purpouses
+        std::string fileName =
+            "kernel-" + to_string(m_index) + "-" + to_string(_block / PROGPOW_PERIOD) + ".cl.ptx";
+        std::string tmpDir;
+
+#ifdef _WIN32
+        tmpDir = getenv("TEMP");
+        tmpDir.append("\\");
+#else
+        tmpDir = "/tmp/";
+#endif
+
+        cl_int err;
+        size_t bin_sz;
+        err = clGetProgramInfo(
+            progpow_program.get(), CL_PROGRAM_BINARY_SIZES, sizeof(size_t), &bin_sz, NULL);
+
+        unsigned char* bin = (unsigned char*)malloc(bin_sz);
+        err = clGetProgramInfo(
+            progpow_program.get(), CL_PROGRAM_BINARIES, sizeof(unsigned char*), &bin, NULL);
+
+        std::string tmpFile = tmpDir + fileName;
+        cllog << "Dumping ptx to : " << tmpFile;
+        ofstream write;
+        write.open(tmpFile);
+        write << bin;
+        write.close();
+    }
+#endif  // _DEVELOPER
+
+
     cllog << "Done compiling in "
           << std::chrono::duration_cast<std::chrono::milliseconds>(
                  std::chrono::steady_clock::now() - startCompile)
@@ -375,7 +409,8 @@ void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
           << " ms. ";
 }
 
-void CLMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection, std::vector<unsigned>& _platforms)
+void CLMiner::enumDevices(
+    std::map<string, DeviceDescriptor>& _DevicesCollection, std::vector<unsigned>& _platforms)
 {
     // Load available platforms
     vector<cl::Platform> platforms = getPlatforms();
@@ -532,16 +567,13 @@ void CLMiner::enumPlatforms()
 
     for (unsigned int pIdx = 0; pIdx < platforms.size(); pIdx++)
     {
-
         std::string platformName = platforms.at(pIdx).getInfo<CL_PLATFORM_NAME>();
         std::string platformVendor = platforms.at(pIdx).getInfo<CL_PLATFORM_VENDOR>();
         std::string platformVersion = platforms.at(pIdx).getInfo<CL_PLATFORM_VERSION>();
 
         std::cout << " " << pIdx << " " << platformName << " (" << platformVendor << ") "
-            << platformVersion << std::endl;
-
+                  << platformVersion << std::endl;
     }
-
 }
 
 void CLMiner::kick_miner()
