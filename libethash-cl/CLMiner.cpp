@@ -393,7 +393,7 @@ void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
         err = clGetProgramInfo(
             progpow_program.get(), CL_PROGRAM_BINARY_SIZES, sizeof(size_t), &bin_sz, NULL);
 
-        unsigned char* bin = (unsigned char*)malloc(bin_sz);
+        unsigned char* bin = new unsigned char[bin_sz];
         err = clGetProgramInfo(
             progpow_program.get(), CL_PROGRAM_BINARIES, sizeof(unsigned char*), &bin, NULL);
 
@@ -403,6 +403,8 @@ void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
         write.open(tmpFile);
         write << bin;
         write.close();
+        
+        delete[] bin;
     }
 #endif  // _DEVELOPER
 
