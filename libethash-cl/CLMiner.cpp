@@ -388,13 +388,12 @@ void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
         tmpDir = "/tmp/";
 #endif
 
-        cl_int err;
         size_t bin_sz;
-        err = clGetProgramInfo(
+        clGetProgramInfo(
             progpow_program.get(), CL_PROGRAM_BINARY_SIZES, sizeof(size_t), &bin_sz, NULL);
 
         unsigned char* bin = new unsigned char[bin_sz];
-        err = clGetProgramInfo(
+        clGetProgramInfo(
             progpow_program.get(), CL_PROGRAM_BINARIES, sizeof(unsigned char*), &bin, NULL);
 
         std::string tmpFile = tmpDir + fileName;
@@ -588,7 +587,7 @@ void CLMiner::kick_miner()
     Miner::kick_miner();
     if (m_activeKernel.load(memory_order_relaxed))
         m_queue_abort.enqueueWriteBuffer(
-            m_searchBuffer, CL_FALSE, offsetof(search_results, abort), sizeof(m_one), &m_one);
+            m_searchBuffer, CL_TRUE, offsetof(search_results, abort), sizeof(m_one), &m_one);
 }
 
 bool CLMiner::initDevice()
@@ -727,6 +726,59 @@ bool CLMiner::initDevice()
         (void)buildErr;
 #endif
         throw std::runtime_error("Unable to build Ethash Kernel");
+    }
+
+    /* If we have a binary kernel, we load it in tandem with the opencl,
+       that way, we can use the dag generate opencl code and fall back on
+       the default kernel if loading fails for whatever reason */
+    bool loadedBinary = false;
+
+    if (!m_settings.noBinary)
+    {
+        std::ifstream kernel_file;
+        vector<unsigned char> bin_data;
+        std::stringstream fname_strm;
+
+        /* Open kernels/ethash_{devicename}_lws{local_work_size}.bin */
+        std::string device_name = m_deviceDescriptor.clName;
+        std::transform(device_name.begin(), device_name.end(), device_name.begin(), ::tolower);
+        fname_strm << boost::dll::program_location().parent_path().string() << "/kernels/ethash_"
+                   << device_name << "_lws" << m_settings.localWorkSize << ".bin";
+        cllog << "Loading binary kernel " << fname_strm.str();
+        try
+        {
+            kernel_file.open(fname_strm.str(), ios::in | ios::binary);
+
+            if (kernel_file.good())
+            {
+                /* Load the data vector with file data */
+                kernel_file.unsetf(std::ios::skipws);
+                bin_data.insert(bin_data.begin(), std::istream_iterator<unsigned char>(kernel_file),
+                    std::istream_iterator<unsigned char>());
+
+                /* Setup the program */
+                cl::Program::Binaries blobs({bin_data});
+                cl::Program program(m_context, {m_device}, blobs);
+                try
+                {
+                    program.build({m_device}, options);
+                    m_ethash_search_kernel = cl::Kernel(program, "ethash_search");
+                    m_ethash_search_kernel.setArg(0, m_searchBuffer);
+                    loadedBinary = true;
+                }
+                catch (cl::Error const&)
+                {
+                }
+            }
+        }
+        catch (...)
+        {
+        }
+        if (!loadedBinary)
+        {
+            cwarn << "Failed to load binary kernel: " << fname_strm.str();
+            cwarn << "Falling back to OpenCL kernel...";
+        }
     }
 
     return true;
@@ -924,7 +976,7 @@ void CLMiner::ethash_search()
                 duration_cast<microseconds>(steady_clock::now() - m_workSearchStart).count();
             m_workHashes += (m_settings.localWorkSize * results.rounds);
 
-            startNonce = m_workHashes + 1;
+            startNonce += m_settings.globalWorkSize;
         }
 
         if (!m_new_work.load(memory_order_relaxed))
@@ -944,11 +996,12 @@ void CLMiner::ethash_search()
         // Submit solutions while kernel is running (if any)
         if (found_count)
         {
+            uint64_t gidOffset = startNonce - m_settings.globalWorkSize;
             for (uint32_t i = 0; i < found_count; i++)
             {
                 h256 mix;
                 memcpy(mix.data(), (void*)results.result[i].mix, sizeof(results.result[i].mix));
-                auto sol = Solution{results.result[i].nonce, mix, m_work_active,
+                auto sol = Solution{results.result[i].gid + gidOffset, mix, m_work_active,
                     std::chrono::steady_clock::now(), m_index};
 
                 cllog << EthWhite << "Job: " << m_work_active.header.abridged()
@@ -1077,7 +1130,7 @@ void CLMiner::progpow_search()
                 duration_cast<microseconds>(steady_clock::now() - m_workSearchStart).count();
             m_workHashes += (m_settings.localWorkSize * results.rounds);
 
-            startNonce += m_workHashes + 1;
+            startNonce += m_settings.globalWorkSize;
         }
 
         if (!m_new_work.load(memory_order_relaxed))
@@ -1097,13 +1150,13 @@ void CLMiner::progpow_search()
         // Submit solutions while kernel is running (if any)
         if (found_count)
         {
+            uint64_t gidOffset = startNonce - m_settings.globalWorkSize;
             for (uint32_t i = 0; i < found_count; i++)
             {
                 h256 mix;
-                uint64_t nonce = results.result[i].nonce;
                 memcpy(mix.data(), (void*)results.result[i].mix, sizeof(results.result[i].mix));
-                auto sol =
-                    Solution{nonce, mix, m_work_active, std::chrono::steady_clock::now(), m_index};
+                auto sol = Solution{results.result[i].gid + gidOffset, mix, m_work_active,
+                    std::chrono::steady_clock::now(), m_index};
 
                 cllog << EthWhite << "Job: " << m_work_active.header.abridged()
                       << " Sol: " << toHex(sol.nonce, HexPrefix::Add) << EthReset;

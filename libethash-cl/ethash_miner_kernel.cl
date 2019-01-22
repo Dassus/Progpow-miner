@@ -239,15 +239,16 @@ do { \
 // NOTE: This struct must match the one defined in CLMiner.cpp
 typedef struct
 {
-    uint count;
-    uint abort;
-    uint rounds;
     struct
     {
         // One word for gid and 8 for mix hash
-        ulong nonce;
+        uint gid;
         uint mix[8];
+        uint pad[7];
     } result[MAX_SEARCH_RESULTS];
+    uint count;
+    uint rounds;
+    uint abort;
 } search_results;
 
 __attribute__((reqd_work_group_size(WORKSIZE, 1, 1)))
@@ -394,7 +395,7 @@ __kernel void ethash_search(
         uint slot = atomic_inc(&g_output->count);
         if (slot < MAX_SEARCH_RESULTS) 
         {
-            g_output->result[slot].nonce = (start_nonce + gid);
+            g_output->result[slot].gid = gid;
             g_output->result[slot].mix[0] = mixhash[0].s0;
             g_output->result[slot].mix[1] = mixhash[0].s1;
             g_output->result[slot].mix[2] = mixhash[1].s0;

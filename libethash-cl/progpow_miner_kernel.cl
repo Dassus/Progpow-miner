@@ -167,15 +167,16 @@ typedef struct {
 // NOTE: This struct must match the one defined in CLMiner.cpp
 typedef struct
 {
-    uint count;
-    uint abort;
-    uint rounds;
     struct
     {
         // One word for gid and 8 for mix hash
-        ulong nonce;
+        uint gid;
         uint mix[8];
+        uint pad[7];
     } result[MAX_SEARCH_RESULTS];
+    uint count;
+    uint rounds;
+    uint abort;
 } search_results;
 
 #if PLATFORM != OPENCL_PLATFORM_NVIDIA // use maxrregs on nv
@@ -273,7 +274,7 @@ __kernel void progpow_search(
         return;
 
     atomic_inc(&g_output->abort);
-    g_output->result[slot].nonce = (start_nonce + gid);
+    g_output->result[slot].gid = gid;
 
     #pragma unroll
     for (int i = 0; i < 8; i++)
