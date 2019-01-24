@@ -4,7 +4,7 @@
  * @author Zawawawa
  */
 
-        COUNT_OFFSET = MAX_SOLTNS * RESULT_SIZE
+        COUNT_OFFSET = 0
         ROUNDS_OFFSET = COUNT_OFFSET + 4
         ABORT_OFFSET = COUNT_OFFSET + 8
 
@@ -840,6 +840,8 @@
         v_add_u32       mix_double_temp1[0], vcc, output[0], mix_double_temp0[0]
         v_mov_b32       mix_double_temp0[0], output[1]
         v_addc_u32      mix_double_temp1[1], vcc, mix_double_temp0[0], mix_double_temp0[1], vcc
+        v_add_u32       mix_double_temp1[0], vcc, mix_double_temp1[0], RESULT_OFFSET
+        v_addc_u32      mix_double_temp1[1], vcc, mix_double_temp1[1], 0, vcc
         flat_store_dword mix_double_temp1, temp1
 
         /* store the mix hash */

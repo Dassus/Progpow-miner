@@ -167,15 +167,15 @@ typedef struct {
 // NOTE: This struct must match the one defined in CLMiner.cpp
 typedef struct
 {
+    uint count;
+    uint rounds;
+    uint abort;
     struct
     {
         // One word for gid and 8 for mix hash
         uint gid;
         uint mix[8];
     } result[MAX_SEARCH_RESULTS];
-    uint count;
-    uint rounds;
-    uint abort;
 } search_results;
 
 #if PLATFORM != OPENCL_PLATFORM_NVIDIA // use maxrregs on nv
