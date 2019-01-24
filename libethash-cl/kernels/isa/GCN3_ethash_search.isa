@@ -4,6 +4,10 @@
  * @author Zawawawa
  */
 
+        COUNT_OFFSET = MAX_SOLTNS * RESULT_SIZE
+        ROUNDS_OFFSET = COUNT_OFFSET + 4
+        ABORT_OFFSET = COUNT_OFFSET + 8
+
 .kernel ethash_search
     .config
         .dims x
@@ -117,12 +121,6 @@
         temp12 = %v62
 
         local_id = %v63
-
-        RESULT_SIZE_LOG2 = 6
-        result_size = 1 << RESULT_SIZE_LOG2
-        COUNT_OFFSET = MAX_SOLTNS * result_size
-        HASHCOUNT_OFFSET = COUNT_OFFSET + 4
-        ABORT_OFFSET = COUNT_OFFSET + 8
 
         mix_save0       = %v[64:67]
         mix_save1       = %v[68:71]
@@ -253,16 +251,11 @@
         v_mov_b32       state12, 0
         v_mov_b32       state11, 0
         v_mov_b32       state10, 1
-
-
-
         s_movk_i32      pass, 0x0
         s_movk_i32      keccak_round, 0x0
 
         .align          32
 .keccak_loop:
-
-
         /*****************/
         /* Keccak Rounds */
         /*****************/
@@ -572,9 +565,6 @@
 
         s_cmp_lt_i32    pass, 1
         s_cbranch_scc0  .test
-
-
-
         /*******/
         /* MIX */
         /*******/
@@ -804,7 +794,7 @@
         /* increment hash count */
         v_cmp_eq_u32    vcc, 0, local_id
         s_and_saveexec_b64 s[46:47], vcc
-        s_add_u32       scalar_double_temp0[0], output[0], HASHCOUNT_OFFSET
+        s_add_u32       scalar_double_temp0[0], output[0], ROUNDS_OFFSET
         s_addc_u32      scalar_double_temp0[1], output[1], 0
         v_mov_b32       temp0, 1
         v_mov_b32       mix_double_temp0[0], scalar_double_temp0[0]
@@ -846,7 +836,7 @@
         /* store the solution */
         v_min_u32       mix_double_temp0[0], MAX_SOLTNS - 1, temp0
         v_mov_b32       mix_double_temp0[1], 0
-        v_lshlrev_b64   mix_double_temp0, RESULT_SIZE_LOG2, mix_double_temp0
+        v_mul_u32_u24   mix_double_temp0[0], mix_double_temp0[0], RESULT_SIZE
         v_add_u32       mix_double_temp1[0], vcc, output[0], mix_double_temp0[0]
         v_mov_b32       mix_double_temp0[0], output[1]
         v_addc_u32      mix_double_temp1[1], vcc, mix_double_temp0[0], mix_double_temp0[1], vcc

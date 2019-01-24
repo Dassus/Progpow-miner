@@ -74,7 +74,6 @@ typedef struct
         // 64-bit nonce and 8 words for mix hash
         uint32_t gid;
         uint32_t mix[8];
-        uint32_t pad[7];
     } result[MAX_SEARCH_RESULTS];
     uint32_t count;
     uint32_t rounds;

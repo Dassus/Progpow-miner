@@ -244,7 +244,6 @@ typedef struct
         // One word for gid and 8 for mix hash
         uint gid;
         uint mix[8];
-        uint pad[7];
     } result[MAX_SEARCH_RESULTS];
     uint count;
     uint rounds;
