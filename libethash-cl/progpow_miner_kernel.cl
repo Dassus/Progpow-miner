@@ -173,7 +173,7 @@ typedef struct
     struct
     {
         // One word for gid and 8 for mix hash
-        uint gid;
+        ulong nonce;
         uint mix[8];
     } result[MAX_SEARCH_RESULTS];
 } search_results;
@@ -273,7 +273,7 @@ __kernel void progpow_search(
         return;
 
     atomic_inc(&g_output->abort);
-    g_output->result[slot].gid = gid;
+    g_output->result[slot].nonce = gid + start_nonce;
 
     #pragma unroll
     for (int i = 0; i < 8; i++)

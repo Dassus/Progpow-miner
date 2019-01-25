@@ -805,9 +805,6 @@
         flat_atomic_add temp0, mix_double_temp0, temp0 glc
         s_mov_b64       exec, s[46:47]
 
-        /* gid - Upper 32bits are ignored. */
-        v_add_co_u32    temp1, vcc, first_work_item_in_group, local_id
-
         v_lshlrev_b32   mix_double_temp0[0], 8, state1
         v_lshlrev_b32   temp0, 8, state0
 
@@ -845,17 +842,23 @@
         v_addc_co_u32   mix_double_temp1[1], vcc, mix_double_temp0[0], mix_double_temp0[1], vcc
         v_add_co_u32    mix_double_temp1[0], vcc, mix_double_temp1[0], RESULT_OFFSET
         v_addc_co_u32   mix_double_temp1[1], vcc, mix_double_temp1[1], 0, vcc
-        flat_store_dword mix_double_temp1, temp1
+        /* gid - Upper 32bits are ignored. */
+        v_add_co_u32    mix_double_temp0[0], vcc, first_work_item_in_group, local_id
+        v_mov_b32       mix_double_temp0[1], 0
+        v_mov_b32       temp0, start_nonce[1]
+        v_add_co_u32    mix_double_temp0[0], vcc, mix_double_temp0[0], start_nonce[0]
+        v_addc_co_u32   mix_double_temp0[1], vcc, mix_double_temp0[1], temp0, vcc
+        flat_store_dwordx2 mix_double_temp1, mix_double_temp0
 
         /* store the mix hash */
-        v_add_co_u32    mix_double_temp1[0], vcc, mix_double_temp1[0], 4
+        v_add_co_u32    mix_double_temp1[0], vcc, mix_double_temp1[0], 8
         v_addc_co_u32   mix_double_temp1[1], vcc, mix_double_temp1[1], 0, vcc
         flat_store_dwordx4 mix_double_temp1, mix_save0
 
         v_add_co_u32    mix_double_temp1[0], vcc, mix_double_temp1[0], 16
         v_addc_co_u32   mix_double_temp1[1], vcc, mix_double_temp1[1], 0, vcc
         flat_store_dwordx4 mix_double_temp1, mix_save1
-        s_waitcnt       vmcnt(0) & lgkmcnt(0)
 
         s_mov_b64       exec, s[46:47]
+
 .exit:  s_endpgm

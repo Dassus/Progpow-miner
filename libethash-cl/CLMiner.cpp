@@ -903,7 +903,6 @@ void CLMiner::ethash_search()
 
     volatile search_results results;
 
-
     m_workSearchStart = steady_clock::now();
 
 #ifdef _DEVELOPER
@@ -996,12 +995,11 @@ void CLMiner::ethash_search()
         // Submit solutions while kernel is running (if any)
         if (found_count)
         {
-            uint64_t gidOffset = startNonce - m_settings.globalWorkSize;
             for (uint32_t i = 0; i < found_count; i++)
             {
                 h256 mix;
                 memcpy(mix.data(), (void*)results.result[i].mix, sizeof(results.result[i].mix));
-                auto sol = Solution{results.result[i].gid + gidOffset, mix, m_work_active,
+                auto sol = Solution{results.result[i].nonce, mix, m_work_active,
                     std::chrono::steady_clock::now(), m_index};
 
                 cllog << EthWhite << "Job: " << m_work_active.header.abridged()
@@ -1150,12 +1148,11 @@ void CLMiner::progpow_search()
         // Submit solutions while kernel is running (if any)
         if (found_count)
         {
-            uint64_t gidOffset = startNonce - m_settings.globalWorkSize;
             for (uint32_t i = 0; i < found_count; i++)
             {
                 h256 mix;
                 memcpy(mix.data(), (void*)results.result[i].mix, sizeof(results.result[i].mix));
-                auto sol = Solution{results.result[i].gid + gidOffset, mix, m_work_active,
+                auto sol = Solution{results.result[i].nonce, mix, m_work_active,
                     std::chrono::steady_clock::now(), m_index};
 
                 cllog << EthWhite << "Job: " << m_work_active.header.abridged()
