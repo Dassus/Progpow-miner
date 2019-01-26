@@ -136,16 +136,16 @@ std::string ProgPow::getKern(uint64_t block_number, int dagelms, kernel_t kern)
     // load
     //ret << "// global load\n";
     if (kern == KERNEL_CUDA)
-        ret << "offset = SHFL(mix[0], loop % PROGPOW_LANES, PROGPOW_LANES);\n";
+        ret << "offset = SHFL(mix[0], loop & (PROGPOW_LANES-1), PROGPOW_LANES);\n";
     else
     {
-        ret << "if(lane_id == (loop % PROGPOW_LANES))\n";
+        ret << "if(lane_id == (loop & (PROGPOW_LANES-1)))\n";
         ret << "    share[group_id] = mix[0];\n";
         ret << "barrier(CLK_LOCAL_MEM_FENCE);\n";
         ret << "offset = share[group_id];\n";
     }
     ret << "offset %= " << dagelms <<";\n";
-    ret << "offset = offset * PROGPOW_LANES + (lane_id ^ loop) % PROGPOW_LANES;\n";
+    ret << "offset = offset * PROGPOW_LANES + (lane_id ^ loop) & (PROGPOW_LANES-1);\n";
     ret << "data_dag = g_dag[offset];\n";
     //ret << "// hack to prevent compiler from reordering LD and usage\n";
     if (kern == KERNEL_CUDA)
@@ -163,7 +163,9 @@ std::string ProgPow::getKern(uint64_t block_number, int dagelms, kernel_t kern)
             std::string dest = mix_dst();
             uint32_t r = rnd();
             //ret << "// cache load " << i << "\n";
-            ret << "offset = " << src << " % PROGPOW_CACHE_WORDS;\n";
+            //ret << "offset = " << src << " % PROGPOW_CACHE_WORDS;\n";
+            //since PROGPOW_CACHE_WORDS is 512, we can eliminate the mod operation
+            ret << "offset = " << src << " & 0x01FF;\n";
             ret << "data = c_dag[offset];\n";
             ret << merge(dest, "data", r);
         }
