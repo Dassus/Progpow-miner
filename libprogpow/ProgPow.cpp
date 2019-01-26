@@ -163,9 +163,8 @@ std::string ProgPow::getKern(uint64_t block_number, int dagelms, kernel_t kern)
             std::string dest = mix_dst();
             uint32_t r = rnd();
             //ret << "// cache load " << i << "\n";
-            //ret << "offset = " << src << " % PROGPOW_CACHE_WORDS;\n";
             //since PROGPOW_CACHE_WORDS is 512, we can eliminate the mod operation
-            ret << "offset = " << src << " & 0x01FF;\n";
+            ret << "offset = " << src << " & (PROGPOW_CACHE_WORDS - 1) ;\n";
             ret << "data = c_dag[offset];\n";
             ret << merge(dest, "data", r);
         }
