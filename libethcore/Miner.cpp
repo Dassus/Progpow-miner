@@ -128,7 +128,6 @@ float Miner::RetrieveHashRate() noexcept
     return m_hr.load(std::memory_order_relaxed);
 }
 
-
 bool Miner::initEpoch()
 {
     // When loading of DAG is sequential wait for
@@ -173,12 +172,17 @@ bool Miner::initEpoch_internal()
 
 void Miner::minerLoop()
 {
-    bool newEpoch, newProgPoWPeriod;
+
+    int newEpoch;
+    uint32_t newProgPoWPeriod;
 
     // Don't catch exceptions here !!
     // They will be handled in workLoop implemented in derived class
     while (!shouldStop())
     {
+        newEpoch = 0;
+        newProgPoWPeriod = 0;
+
         // Wait for work or 3 seconds (whichever the first)
         if (!m_new_work.load(memory_order_relaxed))
         {
@@ -200,13 +204,37 @@ void Miner::minerLoop()
         // Copy latest work into active slot
         {
             boost::mutex::scoped_lock l(x_work);
-            newEpoch = (m_work_latest.epoch != m_work_active.epoch);
-            newProgPoWPeriod = (m_work_latest.block / PROGPOW_PERIOD != m_work_active.period);
+
+            // On epoch change for sure we have a period switch
+            newEpoch = (m_work_latest.epoch != m_work_active.epoch) ? m_work_latest.epoch : 0;
+            if (m_work_latest.algo == "progpow")
+            {
+                // Check latest period is different from active period
+                // This also occurs on epoch change as long as PROGPOW_PERIOD is
+                // a divisor of Epoch height (i.e. (30k % PROGPOW_PERIOD) == 0)
+                if (m_work_latest.block / PROGPOW_PERIOD != m_work_active.period)
+                {
+                    newProgPoWPeriod = m_work_latest.block / PROGPOW_PERIOD;
+                    m_work_latest.period = int(newProgPoWPeriod);
+                }
+                else
+                {
+                    m_work_latest.period = m_work_active.period;
+
+                    // Do get prepared for next period
+                    if (uint32_t(m_work_latest.period) >= m_progpow_kernel_latest.load(memory_order_relaxed))
+                    {
+                        if (((m_work_latest.period + 1) * PROGPOW_PERIOD) % 30000 != 0)
+                        {
+                            invokeAsyncCompile(uint32_t(m_work_latest.period + 1), false);
+                        }
+                    }
+                }
+            }
 
             // Lower current target so we can be sure it will be set as
             // constant into device
-
-            if (m_work_active.algo != m_work_latest.algo)
+            if (m_work_active.algo != m_work_latest.algo || newEpoch || newProgPoWPeriod)
                 m_current_target = 0;
 
             m_work_active = m_work_latest;
@@ -216,8 +244,18 @@ void Miner::minerLoop()
         // Epoch change ?
         if (newEpoch)
         {
+
+            // If mining algo is ProgPoW invoke async compilation
+            // of kernel while DAG is generating. Epoch context is already loaded
+            if (m_work_active.algo == "progpow")
+                invokeAsyncCompile(uint32_t(m_work_active.period), false);
+
             if (!initEpoch())
                 break;  // This will simply exit the thread
+
+            // Forces load of new period
+            if (m_work_active.algo == "progpow")
+                loadProgPoWKernel(newProgPoWPeriod);
 
             // As DAG generation takes a while we need to
             // ensure we're on latest job, not on the one
@@ -233,15 +271,21 @@ void Miner::minerLoop()
         }
         else if (m_work_active.algo == "progpow")
         {
-            m_work_active.period = m_work_active.block / PROGPOW_PERIOD;
-            if (newProgPoWPeriod)
+            // If we're switching epoch or period load appropriate
+            // kernel from cache
+            if (newEpoch || newProgPoWPeriod)
             {
-                uint32_t dagelms = (unsigned)(m_epochContext.dagSize / ETHASH_MIX_BYTES);
-                compileProgPoWKernel(m_work_active.block, dagelms);
-
-                // During compilation a new job might have reached
-                if (m_new_work.load(memory_order_relaxed))
-                    continue;
+                // If we can't load it it's not in cache
+                // Force a sync compilation as last resort
+                if (!loadProgPoWKernel(newProgPoWPeriod))
+                {
+                    invokeAsyncCompile(newProgPoWPeriod, true);
+                    if (!loadProgPoWKernel(newProgPoWPeriod))
+                    {
+                        clog << "Unable to load proper ProgPoW kernel";
+                        break; // Exit the thread
+                    }
+                }
             }
 
             // Start progpow searching
@@ -254,6 +298,12 @@ void Miner::minerLoop()
     }
 
     unloadProgPoWKernel();
+
+    if (m_compilerThread)
+    {
+        m_compilerThread->join();
+        m_compilerThread.reset();
+    }
 }
 
 void Miner::updateHashRate(uint32_t _hashes, uint64_t _microseconds, float _alpha) noexcept
@@ -271,6 +321,41 @@ void Miner::updateHashRate(uint32_t _hashes, uint64_t _microseconds, float _alph
     float avgHr = (m_hr.load(memory_order_relaxed) * _alpha) + (instantHr * (1.0f - _alpha));
     m_hr.store(avgHr, memory_order_relaxed);
     
+}
+
+void Miner::invokeAsyncCompile(uint32_t _seed, bool _wait) 
+{
+    if (m_compilerThread)
+    {
+        if (m_compilerThread->joinable())
+            m_compilerThread->join();
+    }
+
+    m_progpow_kernel_compile_inprogress.store(true, std::memory_order_relaxed);
+    std::string tname = dev::getThreadName();
+
+    m_compilerThread.reset(new std::thread(
+        [&](uint32_t _seed, std::string _tname) {
+            try
+            {
+                dev::setThreadName(_tname.c_str());
+                compileProgPoWKernel(_seed, uint32_t(m_epochContext.dagSize / ETHASH_MIX_BYTES));
+                m_progpow_kernel_latest.store(_seed, memory_order_relaxed);
+            }
+            catch (const std::runtime_error& _ex)
+            {
+                cwarn << "Failed to compile ProgPoW kernel : " << _ex.what();
+            }
+            m_progpow_kernel_compile_inprogress.store(false, std::memory_order_relaxed);
+        },
+        _seed, tname));
+
+    if (_wait)
+    {
+        m_compilerThread->join();
+        m_compilerThread.reset();
+    }
+        
 }
 
 }  // namespace eth
