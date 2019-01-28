@@ -949,10 +949,10 @@ public:
                  << "                        eg --cl-devices 0 2 3" << endl
                  << "                        If not set all available CL devices will be used"
                  << endl
-                 << "    --cl-global-work    UINT [32 .. 65536] Default 8192" << endl
+                 << "    --cl-global-work    UINT [32 .. 65536] Default = " << m_CLSettings.globalWorkSizeMultiplier << endl
                  << "                        Set the global work size multiplier" << endl
                  << "                        Value will be adjusted to nearest power of 2" << endl
-                 << "    --cl-local-work     UINT {64,128,256} Default = 128" << endl
+                 << "    --cl-local-work     UINT {64,128,256} Default = " << m_CLSettings.localWorkSize << endl
                  << "                        Set the local work size" << endl
                  << "    --cl-nobin          FLAG" << endl
                  << "                        Use openCL kernel. Do not load binary kernel" << endl
@@ -966,11 +966,11 @@ public:
                  << "    Use this extended CUDA arguments to fine tune the performance." << endl
                  << "    Be advised default values are best generic findings by developers" << endl
                  << endl
-                 << "    --cu-grid-size      INT [32 .. 131072] Default = 8192" << endl
+                 << "    --cu-grid-size      INT [32 .. 131072] Default = " << m_CUSettings.gridSize << endl
                  << "                        Set the grid size" << endl
                  << "                        Value will be adjusted to nearest power of 2" << endl
                  << endl
-                 << "    --cu-block-size     UINT {32,64,128,256,512} Default = 128" << endl
+                 << "    --cu-block-size     UINT {32,64,128,256,512} Default = " << m_CUSettings.blockSize << endl
                  << "                        Set the block size" << endl
                  << endl
                  << "    --cu-devices        UINT {} Default not set" << endl
@@ -978,10 +978,10 @@ public:
                  << "                        eg --cu-devices 0 2 3" << endl
                  << "                        If not set all available CUDA devices will be used"
                  << endl
-                 << "    --cu-parallel-hash  UINT {1,2,4,8} Default = 4" << endl
-                 << "                        Set the number of hashes per kernel" << endl
+                 << "    --cu-parallel-hash  UINT {1,2,4,8} Default = " << m_CUSettings.parallelHash << endl
+                 << "                        Set the number of parallel hashes per kernel" << endl
                  << endl
-                 << "    --cu-streams        INT [1 .. 99] Default = 2" << endl
+                 << "    --cu-streams        INT [1 .. 99] Default = " << m_CUSettings.streams << endl
                  << "                        Set the number of streams per GPU" << endl
                  << endl
                  << "    --cu-schedule       TEXT Default = 'sync'" << endl
