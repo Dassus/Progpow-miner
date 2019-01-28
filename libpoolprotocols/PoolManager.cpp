@@ -357,6 +357,7 @@ void PoolManager::setActiveConnection(std::string& _connstring)
         if (boost::iequals(m_Settings.connections[idx]->str(), _connstring))
         {
             setActiveConnectionCommon(idx);
+            found = true;
             break;
         }
     if (!found)
