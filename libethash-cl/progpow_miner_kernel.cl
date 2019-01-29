@@ -266,8 +266,6 @@ __kernel void progpow_search(
     if (keccak_f800(g_header, seed, digest) > *target)
         return;
 
-    atomic_inc(&g_output->abort);
-
     uint slot = atomic_inc(&g_output->count);
     if (slot >= MAX_SEARCH_RESULTS) 
         return;
