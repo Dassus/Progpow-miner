@@ -295,8 +295,6 @@ bool CLMiner::loadProgPoWKernel(uint32_t _seed)
                 if (item.platform == ClPlatformTypeEnum::Nvidia &&
                     item.compute == m_deviceDescriptor.clNvCompute && item.period == _seed)
                 {
-                    //bin.reserve(item.bin.size());
-                    //bin.insert(bin.begin(), item.bin.begin(), item.bin.end());
                     _bin = item.bin;
                     _bin_sz = item.bin_sz;
                     found = true;
@@ -479,9 +477,6 @@ void CLMiner::compileProgPoWKernel(uint32_t _seed, uint32_t _dagelms)
 
     unsigned char* bin = new unsigned char[bin_sz];
     err = clGetProgramInfo(program.get(), CL_PROGRAM_BINARIES, sizeof(unsigned char*), &bin, NULL);
-
-    // err = clGetProgramInfo(
-    //    program.get(), CL_PROGRAM_BINARIES, sizeof(unsigned char), bin.data(), NULL);
 
     if (err)
         throw std::runtime_error("Unable to get ProgPoW binary Kernel");
