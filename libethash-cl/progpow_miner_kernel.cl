@@ -220,7 +220,7 @@ __kernel void progpow_search(
     for (int i = 0; i < 8; i++)
         digest.uint32s[i] = 0;
     // keccak(header..nonce)
-    uint64_t seed = keccak_f800(g_header, start_nonce + gid, digest);
+    uint64_t seed = keccak_f800(g_header, nonce, digest);
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -271,7 +271,7 @@ __kernel void progpow_search(
         return;
 
     atomic_inc(&g_output->abort);
-    g_output->result[slot].nonce = (start_nonce + gid);
+    g_output->result[slot].nonce = nonce;
 
     #pragma unroll
     for (int i = 0; i < 8; i++)
