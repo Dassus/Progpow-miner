@@ -19,17 +19,6 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/lexical_cast.hpp>
 
-#define ETHASH_REVISION 23
-#define ETHASH_DATASET_BYTES_INIT 1073741824U  // 2**30
-#define ETHASH_DATASET_BYTES_GROWTH 8388608U   // 2**23
-#define ETHASH_CACHE_BYTES_INIT 1073741824U    // 2**24
-#define ETHASH_CACHE_BYTES_GROWTH 131072U      // 2**17
-#define ETHASH_MIX_BYTES 256
-#define ETHASH_HASH_BYTES 64
-#define ETHASH_DATASET_PARENTS 256
-#define ETHASH_CACHE_ROUNDS 3
-#define ETHASH_ACCESSES 64
-
 #pragma GCC diagnostic push
 #if __GNUC__ >= 6
 #pragma GCC diagnostic ignored "-Wignored-attributes"
@@ -80,6 +69,19 @@ typedef struct
     } result[MAX_SEARCH_RESULTS];
 } search_results;
 
+struct CLKernelCacheItem
+{
+    CLKernelCacheItem(ClPlatformTypeEnum _platform, std::string _compute, std::string _name,
+        uint32_t _period, unsigned char* _bin, size_t _bin_sz)
+      : platform(_platform), compute(_compute), name(_name), period(_period), bin(_bin), bin_sz(_bin_sz)
+    {}
+    ClPlatformTypeEnum platform;  // OpenCL Platform
+    string compute;               // Compute version for Nvidia platform
+    string name;                  // Arch name for Amd
+    uint32_t period;              // Height of ProgPoW period
+    unsigned char* bin;           // Binary/Ptx program
+    size_t bin_sz;                // Binary size
+};
 
 class CLMiner : public Miner
 {
@@ -89,6 +91,10 @@ public:
 
     static void enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection, std::vector<unsigned>& _platforms);
     static void enumPlatforms();
+
+    static std::vector<CLKernelCacheItem> CLKernelCache;
+    static std::mutex cl_kernel_cache_mutex;
+    static std::mutex cl_kernel_build_mutex;
 
     void kick_miner() override;
 
@@ -101,7 +107,9 @@ protected:
 private:
     void ethash_search() override;
     void progpow_search() override;
-    void compileProgPoWKernel(int _block, int _dagelms) override;
+
+    void compileProgPoWKernel(uint32_t _seed, uint32_t _dagelms) override;
+    bool loadProgPoWKernel(uint32_t _seed) override;
 
     void workLoop() override;
 

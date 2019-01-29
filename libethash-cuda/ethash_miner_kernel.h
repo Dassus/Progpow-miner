@@ -24,7 +24,7 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "cuda_runtime.h"
 
-#define ETHASH_ACCESSES 64
+#define ETHASH_ACCESSES 64U
 #define THREADS_PER_HASH (128 / 16)
 
 // It is virtually impossible to get more than

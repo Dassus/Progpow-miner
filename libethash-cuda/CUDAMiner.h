@@ -34,6 +34,17 @@ namespace dev
 {
 namespace eth
 {
+struct CUKernelCacheItem
+{
+    CUKernelCacheItem(std::string _compute, uint32_t _period, char* _ptx, std::string _name)
+      : compute(_compute), period(_period), ptx(_ptx), name(_name)
+    {}
+    string compute;   // Compute version for this Ptx
+    uint32_t period;  // Height of ProgPoW period
+    char* ptx;        // Ptx
+    string name;      // Kernel function name
+};
+
 class CUDAMiner : public Miner
 {
 public:
@@ -43,6 +54,9 @@ public:
     static int getNumDevices();
     static void enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection);
 
+    static std::vector<CUKernelCacheItem> CUKernelCache;
+    static std::mutex cu_kernel_cache_mutex;
+    static std::mutex cu_kernel_build_mutex;
 
 protected:
     bool initDevice() override;
@@ -55,10 +69,13 @@ private:
     void ethash_search() override;
     void progpow_search() override;
 
-    void compileProgPoWKernel(int _block, int _dagelms) override;
+    void compileProgPoWKernel(uint32_t _seed, uint32_t _dagelms) override;
+    bool loadProgPoWKernel(uint32_t _seed) override;
     void unloadProgPoWKernel();
 
     bool m_progpow_kernel_loaded = false;
+    
+
     CUmodule m_module;
     CUfunction m_kernel;
 

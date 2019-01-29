@@ -40,11 +40,11 @@
 #define ETHASH_DATASET_BYTES_GROWTH 8388608U   // 2**23
 #define ETHASH_CACHE_BYTES_INIT 1073741824U    // 2**24
 #define ETHASH_CACHE_BYTES_GROWTH 131072U      // 2**17
-#define ETHASH_MIX_BYTES 256
-#define ETHASH_HASH_BYTES 64
-#define ETHASH_DATASET_PARENTS 256
-#define ETHASH_CACHE_ROUNDS 3
-#define ETHASH_ACCESSES 64
+#define ETHASH_MIX_BYTES 256U
+#define ETHASH_HASH_BYTES 64U
+#define ETHASH_DATASET_PARENTS 256U
+#define ETHASH_CACHE_ROUNDS 3U
+#define ETHASH_ACCESSES 64U
 
 using namespace std;
 
@@ -195,6 +195,7 @@ struct DeviceDescriptor
     string clDeviceVersion;
     unsigned int clDeviceVersionMajor;
     unsigned int clDeviceVersionMinor;
+    string clDeviceExtensions;
     string clBoardName;
     size_t clMaxMemAlloc;
     size_t clMaxWorkGroup;
@@ -212,6 +213,9 @@ struct DeviceDescriptor
     unsigned int cuComputeMinor;
 
     int cpCpuNumber;  // For CPU
+
+    bool isCompiler;  // Marks this device/thread eligible for compilation
+                      // of ProgPoW kernels
 };
 
 struct HwMonitorInfo
@@ -473,6 +477,9 @@ protected:
     mutable boost::mutex x_work;
     mutable boost::mutex x_pause;
 
+    std::unique_ptr<std::thread> m_compilerThread;  // Background thread for ProgPoW kernel
+                                                    // compilation
+
     atomic<bool> m_new_work = {false};
     boost::condition_variable m_new_work_signal;
     boost::condition_variable m_dag_loaded_signal;
@@ -484,13 +491,21 @@ protected:
     uint64_t m_workSearchDuration = 0;                        // Total search duration on a job
     uint32_t m_workHashes;                                    // Total hashes processed on a job
 
+    void invokeAsyncCompile(uint32_t _seed, bool _wait = false);      // Async ProgPoW compilation
+    std::atomic<bool> m_progpow_kernel_compile_inprogress = {false};  // Flag signalling background
+                                                                      // compile in progress
+    std::atomic<uint32_t> m_progpow_kernel_latest = {0U};  // Holds the highest kernel period in
+                                                           // cache
+
 private:
     bitset<MinerPauseEnum::Pause_MAX> m_pauseFlags;
 
 
     virtual void ethash_search() = 0;
     virtual void progpow_search() = 0;
-    virtual void compileProgPoWKernel(int _block, int _dagelms) = 0;
+    virtual void compileProgPoWKernel(uint32_t _seed, uint32_t _dagelms) = 0;  // Actually it pushes the
+                                                                          // kernel in cache
+    virtual bool loadProgPoWKernel(uint32_t _seed) = 0;  // Effectively loads the kernel into GPU
     virtual void unloadProgPoWKernel(){};
 
     std::atomic<float> m_hr = {0.0};
