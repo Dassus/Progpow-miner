@@ -113,7 +113,9 @@ std::string ProgPow::getKern(uint64_t prog_seed, uint32_t dagelms, kernel_t kern
         ret << "        __global const dag_t *g_dag,\n";
         ret << "        __local const uint32_t c_dag[PROGPOW_CACHE_WORDS],\n";
         ret << "        __local uint64_t share[GROUP_SHARE],\n";
-        ret << "        const bool hack_false)\n";
+        ret << "        const bool hack_false,\n";
+        ret << "        const uint32_t lane_id,\n";
+        ret << "        const uint32_t group_id)\n";
     }
     ret << "{\n";
 
@@ -124,8 +126,8 @@ std::string ProgPow::getKern(uint64_t prog_seed, uint32_t dagelms, kernel_t kern
         ret << "const uint32_t lane_id = threadIdx.x & (PROGPOW_LANES-1);\n";
     else
     {
-        ret << "const uint32_t lane_id = get_local_id(0) & (PROGPOW_LANES-1);\n";
-        ret << "const uint32_t group_id = get_local_id(0) / PROGPOW_LANES;\n";
+        //ret << "const uint32_t lane_id = get_local_id(0) & (PROGPOW_LANES-1);\n";
+        //ret << "const uint32_t group_id = get_local_id(0) / PROGPOW_LANES;\n";
     }
 
     // Global memory access

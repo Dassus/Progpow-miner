@@ -223,14 +223,13 @@ __kernel void progpow_search(
     uint64_t seed = keccak_f800(g_header, nonce, digest);
 
     barrier(CLK_LOCAL_MEM_FENCE);
+    uint32_t mix[PROGPOW_REGS];
 
     #pragma unroll 1
     for (uint32_t h = 0; h < PROGPOW_LANES; h++)
     {
-        uint32_t mix[PROGPOW_REGS];
 
         // share the hash's seed across all lanes
-        //uint64_t hash_seed = __shfl_sync(0xFFFFFFFF, seed, h, PROGPOW_LANES);
         if (lane_id == h)
             share[group_id].uint64s[0] = seed;
         barrier(CLK_LOCAL_MEM_FENCE);
@@ -239,9 +238,11 @@ __kernel void progpow_search(
         // initialize mix for all lanes
         fill_mix(hash_seed, lane_id, mix);
 
-        #pragma unroll 1
+        // For whatver reason prevent unrolling this loop causes
+        // bogus periods on AMD OpenCL. Use any unroll factor greater than 1
+        #pragma unroll 2
         for (uint32_t l = 0; l < PROGPOW_CNT_DAG; l++)
-            progPowLoop(l, mix, g_dag, c_dag, share[0].uint64s, hack_false);
+            progPowLoop(l, mix, g_dag, c_dag, share[0].uint64s, hack_false, lane_id, group_id);
 
         // Reduce mix data to a per-lane 32-bit digest
         uint32_t mix_hash = 0x811c9dc5;
@@ -257,7 +258,7 @@ __kernel void progpow_search(
         barrier(CLK_LOCAL_MEM_FENCE);
         #pragma unroll
         for (int i = 0; i < PROGPOW_LANES; i++)
-            fnv1a(digest_temp.uint32s[i % 8], share[group_id].uint32s[i]);
+            fnv1a(digest_temp.uint32s[i & 7], share[group_id].uint32s[i]);
         if (h == lane_id)
             digest = digest_temp;
     }
