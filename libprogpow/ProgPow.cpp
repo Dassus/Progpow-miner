@@ -123,14 +123,6 @@ std::string ProgPow::getKern(uint64_t prog_seed, uint32_t dagelms, kernel_t kern
     ret << "dag_t data_dag;\n";
     ret << "uint32_t offset, data;\n";
 
-    //if (kern == KERNEL_CUDA)
-    //    ret << "const uint32_t lane_id = threadIdx.x & (PROGPOW_LANES-1);\n";
-    //else
-    //{
-    //    //ret << "const uint32_t lane_id = get_local_id(0) & (PROGPOW_LANES-1);\n";
-    //    //ret << "const uint32_t group_id = get_local_id(0) / PROGPOW_LANES;\n";
-    //}
-
     // Global memory access
     // lanes access sequential locations
     // Hard code mix[0] to guarantee the address for the global load depends on the result of the
