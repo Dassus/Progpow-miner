@@ -182,7 +182,7 @@ typedef struct
 __attribute__((reqd_work_group_size(GROUP_SIZE, 1, 1)))
 #endif
 __kernel void progpow_search(
-    __global search_results* restrict g_output,
+    __global volatile search_results* restrict g_output,
     __constant hash32_t const* g_header,
     __global ulong8 const* _g_dag,
     ulong start_nonce,
