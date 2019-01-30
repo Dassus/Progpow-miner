@@ -267,12 +267,20 @@ void dev::eth::CPUMiner::progpow_search()
     }
 }
 
-void dev::eth::CPUMiner::compileProgPoWKernel(int _block, int _dagelms)
+void CPUMiner::compileProgPoWKernel(uint32_t _seed, uint32_t _dagelms)
 {
     // CPU miner does not have any kernel to compile
     // Nevertheless the class must override base class
-    (void)_block;
+    (void)_seed;
     (void)_dagelms;
+}
+
+bool dev::eth::CPUMiner::loadProgPoWKernel(uint32_t _seed)
+{
+    // CPU miner does not have any kernel to load
+    // Nevertheless the class must override base class
+    (void)_seed;
+    return true;
 }
 
 

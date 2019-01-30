@@ -33,6 +33,10 @@ struct CUDAChannel : public LogChannel
 };
 #define cudalog clog(CUDAChannel)
 
+std::vector<CUKernelCacheItem> CUDAMiner::CUKernelCache;
+std::mutex CUDAMiner::cu_kernel_cache_mutex;
+std::mutex CUDAMiner::cu_kernel_build_mutex;
+
 CUDAMiner::CUDAMiner(unsigned _index, CUSettings _settings, DeviceDescriptor& _device)
   : Miner("cuda-", _index),
     m_settings(_settings),
@@ -58,6 +62,15 @@ bool CUDAMiner::initDevice()
     {
         CUDA_SAFE_CALL(cudaSetDevice(m_deviceDescriptor.cuDeviceIndex));
         CUDA_SAFE_CALL(cudaDeviceReset());
+        CUDA_SAFE_CALL(cudaSetDeviceFlags(m_settings.schedule));
+        CUDA_SAFE_CALL(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
+
+        // create mining buffers
+        for (unsigned i = 0; i < m_settings.streams; ++i)
+        {
+            CUDA_SAFE_CALL(cudaMallocHost(&m_search_results.at(i), sizeof(search_results)));
+            CUDA_SAFE_CALL(cudaStreamCreateWithFlags(&m_streams.at(i), cudaStreamNonBlocking));
+        }
     }
     catch (const cuda_runtime_error& ec)
     {
@@ -89,13 +102,14 @@ bool CUDAMiner::initEpoch_internal()
         if (m_allocated_memory_dag < m_epochContext.dagSize ||
             m_allocated_memory_light_cache < m_epochContext.lightSize)
         {
-            // We need to reset the device and (re)create the dag
-            // cudaDeviceReset() frees all previous allocated memory
-            CUDA_SAFE_CALL(cudaDeviceReset());
-            CUDA_SAFE_CALL(cudaSetDeviceFlags(m_settings.schedule));
-            CUDA_SAFE_CALL(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
+            // Clear previously allocated memory space
+            if (m_allocated_memory_dag > 0)
+            {
+                CUDA_SAFE_CALL(cudaFree(m_light));
+                CUDA_SAFE_CALL(cudaFree(m_dag));
+            }
 
-            // Device reset has unloaded all
+            // TODO Device reset has unloaded all
             m_progpow_kernel_loaded = false;
 
             // Check whether the current device has sufficient memory every time we recreate the dag
@@ -118,13 +132,6 @@ bool CUDAMiner::initEpoch_internal()
             m_allocated_memory_light_cache = m_epochContext.lightSize;
             CUDA_SAFE_CALL(cudaMalloc(reinterpret_cast<void**>(&m_dag), m_epochContext.dagSize));
             m_allocated_memory_dag = m_epochContext.dagSize;
-
-            // create mining buffers
-            for (unsigned i = 0; i < m_settings.streams; ++i)
-            {
-                CUDA_SAFE_CALL(cudaMallocHost(&m_search_results.at(i), sizeof(search_results)));
-                CUDA_SAFE_CALL(cudaStreamCreateWithFlags(&m_streams.at(i), cudaStreamNonBlocking));
-            }
         }
         else
         {
@@ -132,6 +139,7 @@ bool CUDAMiner::initEpoch_internal()
                     << dev::getFormattedMemory((double)RequiredMemory);
             get_constants(&m_dag, NULL, &m_light, NULL);
         }
+
 
         CUDA_SAFE_CALL(cudaMemcpy(reinterpret_cast<void*>(m_light), m_epochContext.lightCache,
             m_epochContext.lightSize, cudaMemcpyHostToDevice));
@@ -179,10 +187,8 @@ void CUDAMiner::workLoop()
 
     try
     {
-        minerLoop();  // In base class Miner
-
-        // Reset miner and stop working
-        CUDA_SAFE_CALL(cudaDeviceReset());
+        minerLoop();                        // In base class Miner
+        CUDA_SAFE_CALL(cudaDeviceReset());  // Reset miner and stop working
     }
     catch (cuda_runtime_error const& _e)
     {
@@ -194,24 +200,107 @@ void CUDAMiner::workLoop()
     DEV_BUILD_LOG_PROGRAMFLOW(cudalog, "cu-" << m_index << " CUDAMiner::workLoop() end");
 }
 
-void CUDAMiner::compileProgPoWKernel(int _block, int _dagelms)
+bool CUDAMiner::loadProgPoWKernel(uint32_t _seed)
 {
-    auto startCompile = std::chrono::steady_clock::now();
-
+    DEV_BUILD_LOG_PROGRAMFLOW(cudalog, "cu-" << m_index << " CUDAMiner::loadProgPoWKernel() begin");
     unloadProgPoWKernel();
 
-    cudalog << "Compiling ProgPoW kernel for period : " << (_block / PROGPOW_PERIOD);
+    // Get ptx from cache
+    char* ptx;
+    const char* loweredName;
+    bool found = false;
+    {
+        // Lookup kernel in cache
+        std::lock_guard<std::mutex> cache_mtx(CUDAMiner::cu_kernel_cache_mutex);
+        for (const CUKernelCacheItem& item : CUKernelCache)
+        {
+            if (item.compute == m_deviceDescriptor.cuCompute && item.period == _seed)
+            {
+                ptx = item.ptx;
+                loweredName = item.name.c_str();
+                found = true;
+                break;
+            }
+        }
+    }
 
+    if (!found)
+        return false;
+
+    // Load the generated PTX and get a handle to the kernel.
+    char* jitInfo = new char[32 * 1024];
+    char* jitErr = new char[32 * 1024];
+    CUjit_option jitOpt[] = {CU_JIT_INFO_LOG_BUFFER, CU_JIT_ERROR_LOG_BUFFER,
+        CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES, CU_JIT_ERROR_LOG_BUFFER_SIZE_BYTES, CU_JIT_LOG_VERBOSE,
+        CU_JIT_GENERATE_LINE_INFO};
+    void* jitOptVal[] = {
+        jitInfo, jitErr, (void*)(32 * 1024), (void*)(32 * 1024), (void*)(1), (void*)(0)};
+
+
+    CU_SAFE_CALL(cuModuleLoadDataEx(&m_module, ptx, 6, jitOpt, jitOptVal));
+    CU_SAFE_CALL(cuModuleGetFunction(&m_kernel, m_module, loweredName));
+    m_progpow_kernel_loaded = true;
+
+    delete[] jitInfo;
+    delete[] jitErr;
+
+    // Allocate space for header and target constants
+    if (!d_pheader)
+    {
+        CUDA_SAFE_CALL(cudaMalloc((void**)&d_pheader, sizeof(hash32_t)));
+        CUDA_SAFE_CALL(cudaMalloc((void**)&d_ptarget, sizeof(uint64_t)));
+    }
+
+    DEV_BUILD_LOG_PROGRAMFLOW(cudalog, "cu-" << m_index << " CUDAMiner::loadProgPoWKernel() end");
+    return true;
+}
+
+void CUDAMiner::compileProgPoWKernel(uint32_t _seed, uint32_t _dagelms)
+{
+    {
+        // Delete from cache older periods
+        uint32_t latest = m_progpow_kernel_latest.load(memory_order_relaxed);
+        std::lock_guard<std::mutex> cache_mtx(CUDAMiner::cu_kernel_cache_mutex);
+        for (size_t i = 0; i < CUDAMiner::CUKernelCache.size(); i++)
+        {
+            const CUKernelCacheItem& item = CUDAMiner::CUKernelCache.at(i);
+            if (item.period + 2 < latest)
+            {
+                CUDAMiner::CUKernelCache.at(i) = std::move(CUDAMiner::CUKernelCache.back());
+                CUDAMiner::CUKernelCache.pop_back();
+            }
+        }
+    }
+
+    std::lock_guard<std::mutex> cache_mtx(CUDAMiner::cu_kernel_build_mutex);
+    {
+        // See if another thread have compiled the needed kernel already
+        std::lock_guard<std::mutex> cache_mtx(CUDAMiner::cu_kernel_cache_mutex);
+        for (const CUKernelCacheItem& item : CUDAMiner::CUKernelCache)
+            if (item.compute == m_deviceDescriptor.cuCompute && item.period == _seed)
+                return;
+    }
+
+#ifdef _DEVELOPER
+    auto startCompile = std::chrono::steady_clock::now();
+    if (g_logOptions & LOG_COMPILE)
+    {
+        cudalog << "Compiling ProgPoW kernel at period " << _seed;
+    }
+#endif
+
+    // Getting here means no other thread has compiled this kernel
+    // Build it now
     const char* name = "progpow_search";
-    std::string text = ProgPow::getKern(_block, _dagelms, ProgPow::KERNEL_CUDA);
-    text += std::string(cu_progpow_miner_kernel(), sizeof_cu_progpow_miner_kernel());
+    std::string source = ProgPow::getKern(_seed, _dagelms, ProgPow::KERNEL_CUDA);
+    source += std::string(cu_progpow_miner_kernel(), sizeof_cu_progpow_miner_kernel());
 
 #ifdef _DEVELOPER
     if (g_logOptions & LOG_COMPILE)
     {
         // Save generated source for debug purpouses
         std::string fileName =
-            "kernel-" + to_string(m_index) + "-" + to_string(_block / PROGPOW_PERIOD) + ".cu";
+            "kernel-" + m_deviceDescriptor.cuCompute + "-" + to_string(_seed) + ".cu";
         std::string tmpDir;
 
 #ifdef _WIN32
@@ -225,15 +314,14 @@ void CUDAMiner::compileProgPoWKernel(int _block, int _dagelms)
         cudalog << "Dumping kernel to : " << tmpFile;
         ofstream write;
         write.open(tmpFile);
-        write << text;
+        write << source;
         write.close();
     }
 #endif  // _DEVELOPER
 
-
     nvrtcProgram prog;
     NVRTC_SAFE_CALL(nvrtcCreateProgram(&prog,  // prog
-        text.c_str(),                          // buffer
+        source.c_str(),                        // buffer
         NULL,                                  // name
         0,                                     // numHeaders
         NULL,                                  // headers
@@ -242,10 +330,8 @@ void CUDAMiner::compileProgPoWKernel(int _block, int _dagelms)
     NVRTC_SAFE_CALL(nvrtcAddNameExpression(prog, name));
     std::string op_arch = "-arch=compute_" + to_string(m_deviceDescriptor.cuComputeMajor) +
                           to_string(m_deviceDescriptor.cuComputeMinor);
-    // std::string op_dag = "-DPROGPOW_DAG_ELEMENTS=" + to_string(_dagelms);
 
     const char* opts[] = {op_arch.c_str(),
-        // op_dag.c_str(),
         // "-lineinfo",      // For debug only
         "-use_fast_math" /*, "-default-device"*/};
     nvrtcResult compileResult = nvrtcCompileProgram(prog,  // prog
@@ -275,12 +361,21 @@ void CUDAMiner::compileProgPoWKernel(int _block, int _dagelms)
     char* ptx = new char[ptxSize];
     NVRTC_SAFE_CALL(nvrtcGetPTX(prog, ptx));
 
+    // Find the mangled name
+    const char* mangledName;
+    NVRTC_SAFE_CALL(nvrtcGetLoweredName(prog, name, &mangledName));
+
+    std::string loweredName(mangledName);
+
+    // Destroy the program.
+    NVRTC_SAFE_CALL(nvrtcDestroyProgram(&prog));
+
 #ifdef _DEVELOPER
     if (g_logOptions & LOG_COMPILE)
     {
         // Save generated source for debug purpouses
         std::string fileName =
-            "kernel-" + to_string(m_index) + "-" + to_string(_block / PROGPOW_PERIOD) + ".cu.ptx";
+            "kernel-" + m_deviceDescriptor.cuCompute + "-" + to_string(_seed) + ".cu.ptx";
         std::string tmpDir;
 
 #ifdef _WIN32
@@ -299,68 +394,29 @@ void CUDAMiner::compileProgPoWKernel(int _block, int _dagelms)
     }
 #endif  // _DEVELOPER
 
-
-    // Load the generated PTX and get a handle to the kernel.
-    char* jitInfo = new char[32 * 1024];
-    char* jitErr = new char[32 * 1024];
-    CUjit_option jitOpt[] = {CU_JIT_INFO_LOG_BUFFER, CU_JIT_ERROR_LOG_BUFFER,
-        CU_JIT_INFO_LOG_BUFFER_SIZE_BYTES, CU_JIT_ERROR_LOG_BUFFER_SIZE_BYTES, CU_JIT_LOG_VERBOSE,
-        CU_JIT_GENERATE_LINE_INFO};
-
-    void* jitOptVal[] = {
-        jitInfo, jitErr, (void*)(32 * 1024), (void*)(32 * 1024), (void*)(1), (void*)(0)};
-
-    CU_SAFE_CALL(cuModuleLoadDataEx(&m_module, ptx, 6, jitOpt, jitOptVal));
-    m_progpow_kernel_loaded = true;
-
-#ifdef _DEVELOPER
-    if (g_logOptions & LOG_COMPILE)
+    // Cache the generated Ptx
     {
-        cudalog << "JIT info: \n" << jitInfo;
-        cudalog << "JIT err: \n" << jitErr;
+        std::lock_guard<std::mutex> cache_mtx(CUDAMiner::cu_kernel_cache_mutex);
+        CUKernelCache.emplace_back(m_deviceDescriptor.cuCompute, int(_seed), ptx, loweredName);
     }
-#endif
 
-    delete[] ptx;
-    delete[] jitInfo;
-    delete[] jitErr;
-
-    // Find the mangled name
-    const char* mangledName;
-    NVRTC_SAFE_CALL(nvrtcGetLoweredName(prog, name, &mangledName));
 #ifdef _DEVELOPER
     if (g_logOptions & LOG_COMPILE)
-        cudalog << "Mangled name: " << mangledName;
+        cudalog << "Done compiling in "
+                << std::chrono::duration_cast<std::chrono::milliseconds>(
+                       std::chrono::steady_clock::now() - startCompile)
+                       .count()
+                << " ms. ";
 #endif
-    CU_SAFE_CALL(cuModuleGetFunction(&m_kernel, m_module, mangledName));
-
-    // Destroy the program.
-    NVRTC_SAFE_CALL(nvrtcDestroyProgram(&prog));
-
-    cudalog << "Done compiling in "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                   std::chrono::steady_clock::now() - startCompile)
-                   .count()
-            << " ms. ";
-
-    // Allocate space for header and target constants
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_pheader, sizeof(hash32_t)));
-    CUDA_SAFE_CALL(cudaMalloc((void**)&d_ptarget, sizeof(uint64_t)));
 }
 
 void CUDAMiner::unloadProgPoWKernel()
 {
     if (!m_progpow_kernel_loaded)
         return;
-#if _DEVELOPER
-    if (g_logOptions && LOG_COMPILE)
-        cudalog << "Unloading ProgPoW kernel";
-#endif
 
-    CUDA_SAFE_CALL(cudaFree(d_pheader));
-    CUDA_SAFE_CALL(cudaFree(d_ptarget));
-
-    // Ensure next ProgPoW target is set
+    // Ensure next ProgPoW target is set on next
+    // search
     m_current_target = 0;
 
     CU_SAFE_CALL(cuModuleUnload(m_module));

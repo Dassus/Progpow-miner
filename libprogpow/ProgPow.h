@@ -8,17 +8,17 @@
 // lanes that work together calculating a hash
 #define PROGPOW_LANES           16
 // uint32 registers per lane
-#define PROGPOW_REGS            32
+#define PROGPOW_REGS            32u
 // uint32 loads from the DAG per lane
-#define PROGPOW_DAG_LOADS       4
+#define PROGPOW_DAG_LOADS       4u
 // size of the cached portion of the DAG
-#define PROGPOW_CACHE_BYTES     (16*1024)
+#define PROGPOW_CACHE_BYTES     16384u // i.e. 16*1024
 // DAG accesses, also the number of loops executed
-#define PROGPOW_CNT_DAG         64
+#define PROGPOW_CNT_DAG         64u
 // random cache accesses per loop
-#define PROGPOW_CNT_CACHE       12
+#define PROGPOW_CNT_CACHE       12u
 // random math instructions per loop
-#define PROGPOW_CNT_MATH        20
+#define PROGPOW_CNT_MATH        20u
 
 typedef struct
 {
@@ -33,7 +33,7 @@ public:
 		KERNEL_CL
 	} kernel_t;
 
-	static std::string getKern(uint64_t block_number, int dagelms, kernel_t kern);
+	static std::string getKern(uint64_t prog_seed, uint32_t dagelms, kernel_t kern);
 private:
     static std::string math(std::string d, std::string a, std::string b, uint32_t r);
     static std::string merge(std::string a, std::string b, uint32_t r);

@@ -42,7 +42,8 @@ protected:
 private:
     void ethash_search() override;
     void progpow_search() override;
-    void compileProgPoWKernel(int _block, int _dagelms) override;
+    void compileProgPoWKernel(uint32_t _seed, uint32_t _dagelms) override;
+    bool loadProgPoWKernel(uint32_t _seed) override;
 
     void workLoop() override;
 

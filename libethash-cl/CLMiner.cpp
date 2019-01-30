@@ -26,6 +26,10 @@ struct CLChannel : public LogChannel
 #define cllog clog(CLChannel)
 #define ETHCL_LOG(_contents) cllog << _contents
 
+std::vector<CLKernelCacheItem> CLMiner::CLKernelCache;
+std::mutex CLMiner::cl_kernel_cache_mutex;
+std::mutex CLMiner::cl_kernel_build_mutex;
+
 /**
  * Returns the name of a numerical cl_int error
  * Takes constants from CL/cl.h and returns them in a readable format
@@ -273,42 +277,147 @@ void CLMiner::workLoop()
     DEV_BUILD_LOG_PROGRAMFLOW(cllog, "cl-" << m_index << " CLMiner::workLoop() end");
 }
 
-void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
+bool CLMiner::loadProgPoWKernel(uint32_t _seed)
 {
-    auto startCompile = std::chrono::steady_clock::now();
-    cllog << "Compiling ProgPoW kernel for period : " << (_block / PROGPOW_PERIOD);
+    DEV_BUILD_LOG_PROGRAMFLOW(cllog, "cl-" << m_index << " CLMiner::loadProgPoWKernel() begin");
 
-    std::string progpow_code = ProgPow::getKern(_block, _dagelms, ProgPow::KERNEL_CL);
-    progpow_code += std::string(cl_progpow_miner_kernel(), sizeof_cl_progpow_miner_kernel());
+    // Get ptx from cache
+    unsigned char* _bin;
+    size_t _bin_sz;
+    bool found = false;
+    {
+        // Lookup kernel in cache
+        std::lock_guard<std::mutex> cache_mtx(CLMiner::cl_kernel_cache_mutex);
+        for (const CLKernelCacheItem& item : CLKernelCache)
+        {
+            if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Nvidia)
+            {
+                if (item.platform == ClPlatformTypeEnum::Nvidia &&
+                    item.compute == m_deviceDescriptor.clNvCompute && item.period == _seed)
+                {
+                    _bin = item.bin;
+                    _bin_sz = item.bin_sz;
+                    found = true;
+                    break;
+                }
+            }
+            else
+            {
+                if (item.platform == m_deviceDescriptor.clPlatformType &&
+                    item.name == m_deviceDescriptor.name && item.period == _seed)
+                {
+                    _bin = item.bin;
+                    _bin_sz = item.bin_sz;
+                    found = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!found)
+        return false;
+
+    // Setup the program
+    std::vector<unsigned char> vbin(_bin, _bin + _bin_sz);
+    cl::Program::Binaries blobs({vbin});
+    cl::Program program(m_context, {m_device}, blobs);
+    try
+    {
+        program.build({m_device}, NULL);
+        m_progpow_search_kernel = cl::Kernel(program, "progpow_search");
+        m_progpow_search_kernel.setArg(0, m_searchBuffer);
+        m_progpow_search_kernel.setArg(2, m_dag);
+        m_progpow_search_kernel.setArg(5, 0);
+
+        // Lower current target so the arg is properly passed to the
+        // new kernel
+        m_current_target = 0;
+    }
+    catch (const std::exception& _ex)
+    {
+        cllog << "Unable to load ProgPoW kernel : " << _ex.what();
+        return false;
+    }
+
+    DEV_BUILD_LOG_PROGRAMFLOW(cllog, "cl-" << m_index << " CLMiner::loadProgPoWKernel() end");
+    return true;
+}
+
+void CLMiner::compileProgPoWKernel(uint32_t _seed, uint32_t _dagelms)
+{
+    {
+        // Delete from cache older periods
+        uint32_t latest = m_progpow_kernel_latest.load(memory_order_relaxed);
+        std::lock_guard<std::mutex> cache_mtx(CLMiner::cl_kernel_cache_mutex);
+        for (size_t i = 0; i < CLMiner::CLKernelCache.size(); i++)
+        {
+            const CLKernelCacheItem& item = CLMiner::CLKernelCache.at(i);
+            if (item.period + 2 < latest)
+            {
+                CLMiner::CLKernelCache.at(i) = std::move(CLMiner::CLKernelCache.back());
+                CLMiner::CLKernelCache.pop_back();
+            }
+        }
+    }
+
+    std::lock_guard<std::mutex> cache_mtx(CLMiner::cl_kernel_build_mutex);
+    {
+        // See if another thread have compiled the needed kernel already
+        std::lock_guard<std::mutex> cache_mtx(CLMiner::cl_kernel_cache_mutex);
+        for (const CLKernelCacheItem& item : CLMiner::CLKernelCache)
+        {
+            // For NVIDIA OpenCL
+            if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Nvidia)
+            {
+                if (item.platform == ClPlatformTypeEnum::Nvidia &&
+                    item.compute == m_deviceDescriptor.clNvCompute && item.period == _seed)
+                    return;
+            }
+            else
+            {
+                if (item.platform == m_deviceDescriptor.clPlatformType &&
+                    item.name == m_deviceDescriptor.name && item.period == _seed)
+                    return;
+            }
+        }
+    }
+
+#ifdef _DEVELOPER
+    auto startCompile = std::chrono::steady_clock::now();
+    if (g_logOptions & LOG_COMPILE)
+        cllog << "Compiling ProgPoW kernel at period " << _seed;
+#endif
+
+    std::string source = ProgPow::getKern(_seed, _dagelms, ProgPow::KERNEL_CL);
+    source += std::string(cl_progpow_miner_kernel(), sizeof_cl_progpow_miner_kernel());
 
     char options[256];
     int computeCapability = 0;
     int maxRegs = 0;
 
-    addDefinition(progpow_code, "GROUP_SIZE", m_settings.localWorkSize);
-    addDefinition(progpow_code, "PROGPOW_DAG_BYTES", (unsigned int)m_epochContext.dagSize);
-    // addDefinition(progpow_code, "PROGPOW_DAG_ELEMENTS", _dagelms);
-    addDefinition(progpow_code, "LIGHT_WORDS", m_epochContext.lightNumItems);
-    addDefinition(progpow_code, "MAX_SEARCH_RESULTS", MAX_SEARCH_RESULTS);
+    addDefinition(source, "GROUP_SIZE", m_settings.localWorkSize);
+    addDefinition(source, "PROGPOW_DAG_BYTES", (unsigned int)m_epochContext.dagSize);
+    addDefinition(source, "MAX_SEARCH_RESULTS", MAX_SEARCH_RESULTS);
     switch (m_deviceDescriptor.clPlatformType)
     {
     case ClPlatformTypeEnum::Nvidia:
-        addDefinition(progpow_code, "PLATFORM", 1);
+        addDefinition(source, "PLATFORM", 1);
         computeCapability =
             (m_deviceDescriptor.clNvComputeMajor * 10) + m_deviceDescriptor.clNvComputeMinor;
         maxRegs = computeCapability > 35 ? 72 : 63;
         sprintf(options, "-cl-nv-maxrregcount=%d", maxRegs);
         break;
     case ClPlatformTypeEnum::Amd:
-        addDefinition(progpow_code, "PLATFORM", 2);
+        addDefinition(source, "PLATFORM", 2);
         sprintf(options, "%s", "");
         break;
     case ClPlatformTypeEnum::Clover:
-        addDefinition(progpow_code, "PLATFORM", 3);
+        addDefinition(source, "PLATFORM", 3);
         sprintf(options, "%s", "");
         break;
     default:
-        addDefinition(progpow_code, "PLATFORM", 0);
+        addDefinition(source, "PLATFORM", 0);
         sprintf(options, "%s", "");
         break;
     }
@@ -318,9 +427,11 @@ void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
     if (g_logOptions & LOG_COMPILE)
     {
         // Save generated source for debug purpouses
-        std::string fileName =
-            "kernel-" + to_string(m_index) + "-" + to_string(_block / PROGPOW_PERIOD) + ".cl";
-        std::string tmpDir;
+        std::string fileName, tmpDir;
+        if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Nvidia)
+            fileName = "kernel-" + m_deviceDescriptor.clNvCompute + "-" + to_string(_seed) + ".cl";
+        else
+            fileName = "kernel-" + m_deviceDescriptor.name + "-" + to_string(_seed) + ".cl";
 
 #ifdef _WIN32
         tmpDir = getenv("TEMP");
@@ -333,31 +444,23 @@ void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
         cllog << "Dumping kernel to : " << tmpFile;
         ofstream write;
         write.open(tmpFile);
-        write << progpow_code;
+        write << source;
         write.close();
     }
 #endif  // _DEVELOPER
 
-    cl::Program::Sources progpow_sources{{progpow_code.data(), progpow_code.size()}};
-    cl::Program progpow_program(m_context, progpow_sources);
+    cl::Program::Sources program_sources{{source.data(), source.size()}};
+    cl::Program program(m_context, program_sources);
     try
     {
-        progpow_program.build({m_device}, options);
-        m_progpow_search_kernel = cl::Kernel(progpow_program, "progpow_search");
-        m_progpow_search_kernel.setArg(0, m_searchBuffer);
-        m_progpow_search_kernel.setArg(2, m_dag);
-        m_progpow_search_kernel.setArg(5, 0);
-
-        // Lower current target so the arg is properly passed to the
-        // new kernel
-        m_current_target = 0;
+        program.build({m_device}, options);
     }
     catch (cl::BuildError const& buildErr)
     {
 #if _DEVELOPER
         if (g_logOptions & LOG_COMPILE)
         {
-            std::string buildlog = progpow_program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device);
+            std::string buildlog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device);
             cllog << "OpenCL ProgPoW kernel build error : " << buildErr.err() << " "
                   << buildErr.what() << "\r\n"
                   << buildlog;
@@ -365,21 +468,30 @@ void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
 #else
         (void)buildErr;
 #endif
-        throw std::runtime_error("Unable to build ProgPoW Kernel");
+        throw std::runtime_error("Unable to build ProgPoW kernel at period " + to_string(_seed));
     }
+
+    cl_int err;
+    size_t bin_sz;
+    err = clGetProgramInfo(program.get(), CL_PROGRAM_BINARY_SIZES, sizeof(size_t), &bin_sz, NULL);
+
+    unsigned char* bin = new unsigned char[bin_sz];
+    err = clGetProgramInfo(program.get(), CL_PROGRAM_BINARIES, sizeof(unsigned char*), &bin, NULL);
+
+    if (err)
+        throw std::runtime_error("Unable to get ProgPoW binary Kernel");
+
 
 #ifdef _DEVELOPER
     if (g_logOptions & LOG_COMPILE)
     {
         // Save generated source for debug purpouses
-        std::string fileName =
-            "kernel-" + to_string(m_index) + "-" + to_string(_block / PROGPOW_PERIOD) + ".cl.";
+        std::string fileName, tmpDir;
         if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Nvidia)
-            fileName.append("ptx");
+            fileName =
+                "kernel-" + m_deviceDescriptor.clNvCompute + "-" + to_string(_seed) + ".cl.ptx";
         else
-            fileName.append("bin");
-
-        std::string tmpDir;
+            fileName = "kernel-" + m_deviceDescriptor.name + "-" + to_string(_seed) + ".cl.bin";
 
 #ifdef _WIN32
         tmpDir = getenv("TEMP");
@@ -387,32 +499,34 @@ void CLMiner::compileProgPoWKernel(int _block, int _dagelms)
 #else
         tmpDir = "/tmp/";
 #endif
-
-        size_t bin_sz;
-        clGetProgramInfo(
-            progpow_program.get(), CL_PROGRAM_BINARY_SIZES, sizeof(size_t), &bin_sz, NULL);
-
-        unsigned char* bin = new unsigned char[bin_sz];
-        clGetProgramInfo(
-            progpow_program.get(), CL_PROGRAM_BINARIES, sizeof(unsigned char*), &bin, NULL);
-
         std::string tmpFile = tmpDir + fileName;
         cllog << "Dumping binaries to : " << tmpFile;
         ofstream write;
         write.open(tmpFile);
         write << bin;
         write.close();
-        
-        delete[] bin;
     }
 #endif  // _DEVELOPER
 
+    // Cache the generated Binary
+    {
+        std::lock_guard<std::mutex> cache_mtx(CLMiner::cl_kernel_cache_mutex);
+        if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Nvidia)
+            CLKernelCache.emplace_back(
+                ClPlatformTypeEnum::Nvidia, m_deviceDescriptor.clNvCompute, "", _seed, bin, bin_sz);
+        else
+            CLKernelCache.emplace_back(
+                m_deviceDescriptor.clPlatformType, "", m_deviceDescriptor.name, _seed, bin, bin_sz);
+    }
 
-    cllog << "Done compiling in "
-          << std::chrono::duration_cast<std::chrono::milliseconds>(
-                 std::chrono::steady_clock::now() - startCompile)
-                 .count()
-          << " ms. ";
+#ifdef _DEVELOPER
+    if (g_logOptions & LOG_COMPILE)
+        cllog << "Done compiling in "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(
+                     std::chrono::steady_clock::now() - startCompile)
+                     .count()
+              << " ms. ";
+#endif
 }
 
 void CLMiner::enumDevices(
@@ -532,6 +646,7 @@ void CLMiner::enumDevices(
                 std::stoi(deviceDescriptor.clDeviceVersion.substr(7, 1));
             deviceDescriptor.clDeviceVersionMinor =
                 std::stoi(deviceDescriptor.clDeviceVersion.substr(9, 1));
+            deviceDescriptor.clDeviceExtensions = device.getInfo<CL_DEVICE_EXTENSIONS>();
             deviceDescriptor.totalMemory = device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();
             deviceDescriptor.clMaxMemAlloc = device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
             deviceDescriptor.clMaxWorkGroup = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();

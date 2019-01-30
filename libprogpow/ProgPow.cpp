@@ -8,18 +8,16 @@
 #define mix_cache() \
     ("mix[" + std::to_string(mix_seq_cache[(mix_seq_cache_cnt++) % PROGPOW_REGS]) + "]")
 
-void swap(int& a, int& b)
+void swap(uint32_t& a, uint32_t& b)
 {
-    int t = a;
+    uint32_t t = a;
     a = b;
     b = t;
 }
 
-std::string ProgPow::getKern(uint64_t block_number, int dagelms, kernel_t kern)
+std::string ProgPow::getKern(uint64_t prog_seed, uint32_t dagelms, kernel_t kern)
 {
     std::stringstream ret;
-
-    uint64_t prog_seed = block_number / PROGPOW_PERIOD;
 
     uint32_t seed0 = (uint32_t)prog_seed;
     uint32_t seed1 = prog_seed >> 32;
@@ -33,16 +31,16 @@ std::string ProgPow::getKern(uint64_t block_number, int dagelms, kernel_t kern)
     // Create a random sequence of mix destinations and cache sources
     // Merge is a read-modify-write, guaranteeing every mix element is modified every loop
     // Guarantee no cache load is duplicated and can be optimized away
-    int mix_seq_dst[PROGPOW_REGS];
-    int mix_seq_cache[PROGPOW_REGS];
-    int mix_seq_dst_cnt = 0;
-    int mix_seq_cache_cnt = 0;
-    for (int i = 0; i < PROGPOW_REGS; i++)
+    uint32_t mix_seq_dst[PROGPOW_REGS];
+    uint32_t mix_seq_cache[PROGPOW_REGS];
+    uint32_t mix_seq_dst_cnt = 0;
+    uint32_t mix_seq_cache_cnt = 0;
+    for (uint32_t i = 0; i < PROGPOW_REGS; i++)
     {
         mix_seq_dst[i] = i;
         mix_seq_cache[i] = i;
     }
-    for (int i = PROGPOW_REGS - 1; i > 0; i--)
+    for (uint32_t i = PROGPOW_REGS - 1; i > 0; i--)
     {
         int j;
         j = rnd() % (i + 1);
@@ -51,12 +49,12 @@ std::string ProgPow::getKern(uint64_t block_number, int dagelms, kernel_t kern)
         swap(mix_seq_cache[i], mix_seq_cache[j]);
     }
 
-    ret << "#define PROGPOW_LANES           " << PROGPOW_LANES << "\n";
-    ret << "#define PROGPOW_REGS            " << PROGPOW_REGS << "\n";
-    ret << "#define PROGPOW_DAG_LOADS       " << PROGPOW_DAG_LOADS << "\n";
-    ret << "#define PROGPOW_CACHE_WORDS     " << PROGPOW_CACHE_BYTES / sizeof(uint32_t) << "\n";
-    ret << "#define PROGPOW_CNT_DAG         " << PROGPOW_CNT_DAG << "\n";
-    ret << "#define PROGPOW_CNT_MATH        " << PROGPOW_CNT_MATH << "\n";
+    ret << "#define PROGPOW_LANES           " << PROGPOW_LANES << "u\n";
+    ret << "#define PROGPOW_REGS            " << PROGPOW_REGS << "u\n";
+    ret << "#define PROGPOW_DAG_LOADS       " << PROGPOW_DAG_LOADS << "u\n";
+    ret << "#define PROGPOW_CACHE_WORDS     " << PROGPOW_CACHE_BYTES / sizeof(uint32_t) << "u\n";
+    ret << "#define PROGPOW_CNT_DAG         " << PROGPOW_CNT_DAG << "u\n";
+    ret << "#define PROGPOW_CNT_MATH        " << PROGPOW_CNT_MATH << "u\n";
     ret << "\n";
 
     if (kern == KERNEL_CUDA)
@@ -115,7 +113,9 @@ std::string ProgPow::getKern(uint64_t block_number, int dagelms, kernel_t kern)
         ret << "        __global const dag_t *g_dag,\n";
         ret << "        __local const uint32_t c_dag[PROGPOW_CACHE_WORDS],\n";
         ret << "        __local uint64_t share[GROUP_SHARE],\n";
-        ret << "        const bool hack_false)\n";
+        ret << "        const bool hack_false,\n";
+        ret << "        const uint32_t lane_id,\n";
+        ret << "        const uint32_t group_id)\n";
     }
     ret << "{\n";
 
@@ -126,8 +126,8 @@ std::string ProgPow::getKern(uint64_t block_number, int dagelms, kernel_t kern)
         ret << "const uint32_t lane_id = threadIdx.x & (PROGPOW_LANES-1);\n";
     else
     {
-        ret << "const uint32_t lane_id = get_local_id(0) & (PROGPOW_LANES-1);\n";
-        ret << "const uint32_t group_id = get_local_id(0) / PROGPOW_LANES;\n";
+        //ret << "const uint32_t lane_id = get_local_id(0) & (PROGPOW_LANES-1);\n";
+        //ret << "const uint32_t group_id = get_local_id(0) / PROGPOW_LANES;\n";
     }
 
     // Global memory access
@@ -136,16 +136,18 @@ std::string ProgPow::getKern(uint64_t block_number, int dagelms, kernel_t kern)
     // load
     //ret << "// global load\n";
     if (kern == KERNEL_CUDA)
-        ret << "offset = SHFL(mix[0], loop % PROGPOW_LANES, PROGPOW_LANES);\n";
+        ret << "offset = SHFL(mix[0], loop & (PROGPOW_LANES-1), PROGPOW_LANES);\n";
     else
     {
-        ret << "if(lane_id == (loop % PROGPOW_LANES))\n";
+        ret << "if(lane_id == (loop & (PROGPOW_LANES-1)))\n";
         ret << "    share[group_id] = mix[0];\n";
         ret << "barrier(CLK_LOCAL_MEM_FENCE);\n";
         ret << "offset = share[group_id];\n";
     }
-    ret << "offset %= " << dagelms <<";\n";
-    ret << "offset = offset * PROGPOW_LANES + (lane_id ^ loop) % PROGPOW_LANES;\n";
+
+    ret << "offset %= " << dagelms <<"u;\n";
+    ret << "offset = offset * PROGPOW_LANES + ((lane_id ^ loop) & (PROGPOW_LANES-1));\n";
+  
     ret << "data_dag = g_dag[offset];\n";
     //ret << "// hack to prevent compiler from reordering LD and usage\n";
     if (kern == KERNEL_CUDA)
@@ -153,7 +155,7 @@ std::string ProgPow::getKern(uint64_t block_number, int dagelms, kernel_t kern)
     else
         ret << "if (hack_false) barrier(CLK_LOCAL_MEM_FENCE);\n";
 
-    for (int i = 0; (i < PROGPOW_CNT_CACHE) || (i < PROGPOW_CNT_MATH); i++)
+    for (uint32_t i = 0; (i < PROGPOW_CNT_CACHE) || (i < PROGPOW_CNT_MATH); i++)
     {
         if (i < PROGPOW_CNT_CACHE)
         {
@@ -163,7 +165,7 @@ std::string ProgPow::getKern(uint64_t block_number, int dagelms, kernel_t kern)
             std::string dest = mix_dst();
             uint32_t r = rnd();
             //ret << "// cache load " << i << "\n";
-            ret << "offset = " << src << " % PROGPOW_CACHE_WORDS;\n";
+            ret << "offset = " << src << " & (PROGPOW_CACHE_WORDS - 1) ;\n";
             ret << "data = c_dag[offset];\n";
             ret << merge(dest, "data", r);
         }
@@ -171,9 +173,9 @@ std::string ProgPow::getKern(uint64_t block_number, int dagelms, kernel_t kern)
         {
             // Random Math
             // Generate 2 unique sources
-            int src_rnd = rnd() % ((PROGPOW_REGS - 1) * PROGPOW_REGS);
-            int src1 = src_rnd % PROGPOW_REGS;  // 0 <= src1 < PROGPOW_REGS
-            int src2 = src_rnd / PROGPOW_REGS;  // 0 <= src2 < PROGPOW_REGS - 1
+            uint32_t src_rnd = rnd() % ((PROGPOW_REGS - 1) * PROGPOW_REGS);
+            uint32_t src1 = src_rnd % PROGPOW_REGS;  // 0 <= src1 < PROGPOW_REGS
+            uint32_t src2 = src_rnd / PROGPOW_REGS;  // 0 <= src2 < PROGPOW_REGS - 1
             if (src2 >= src1)
                 ++src2;  // src2 is now any reg other than src1
             std::string src1_str = "mix[" + std::to_string(src1) + "]";
@@ -194,7 +196,7 @@ std::string ProgPow::getKern(uint64_t block_number, int dagelms, kernel_t kern)
     else
         ret << "if (hack_false) barrier(CLK_LOCAL_MEM_FENCE);\n";
     ret << merge("mix[0]", "data_dag.s[0]", rnd());
-    for (int i = 1; i < PROGPOW_DAG_LOADS; i++)
+    for (uint32_t i = 1; i < PROGPOW_DAG_LOADS; i++)
     {
         std::string dest = mix_dst();
         uint32_t r = rnd();
