@@ -703,7 +703,7 @@ void CLMiner::kick_miner()
     Miner::kick_miner();
     if (m_activeKernel.load(memory_order_relaxed))
         m_queue_abort.enqueueWriteBuffer(
-            m_searchBuffer, CL_FALSE, offsetof(search_results, abort), sizeof(m_one), &m_one);
+            m_searchBuffer, CL_TRUE, offsetof(search_results, abort), sizeof(m_one), &m_one);
 }
 
 bool CLMiner::initDevice()
