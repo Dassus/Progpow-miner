@@ -190,11 +190,11 @@ progpow_search(
     uint64_t seed = keccak_f800(header, nonce, digest);
 
     __syncthreads();
+    uint32_t mix[PROGPOW_REGS];
 
     #pragma unroll 1
     for (uint32_t h = 0; h < PROGPOW_LANES; h++)
     {
-        uint32_t mix[PROGPOW_REGS];
 
         // share the hash's seed across all lanes
         uint64_t hash_seed = SHFL(seed, h, PROGPOW_LANES);
@@ -203,7 +203,7 @@ progpow_search(
 
         #pragma unroll 1
         for (uint32_t l = 0; l < PROGPOW_CNT_DAG; l++)
-            progPowLoop(l, mix, g_dag, c_dag, hack_false);
+            progPowLoop(l, mix, g_dag, c_dag, hack_false, lane_id);
 
 
         // Reduce mix data to a per-lane 32-bit digest
