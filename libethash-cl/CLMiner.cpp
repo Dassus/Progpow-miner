@@ -416,6 +416,10 @@ void CLMiner::compileProgPoWKernel(uint32_t _seed, uint32_t _dagelms)
         addDefinition(source, "PLATFORM", 3);
         sprintf(options, "%s", "");
         break;
+    case ClPlatformTypeEnum::Apple:
+        addDefinition(source, "PLATFORM", 4);
+        sprintf(options, "%s", "");
+        break;
     default:
         addDefinition(source, "PLATFORM", 0);
         sprintf(options, "%s", "");
@@ -556,6 +560,8 @@ void CLMiner::enumDevices(
             platformType = ClPlatformTypeEnum::Clover;
         else if (platformName == "NVIDIA CUDA")
             platformType = ClPlatformTypeEnum::Nvidia;
+        else if (platformName == "Apple")
+            platformType = ClPlatformTypeEnum::Apple;
         else
         {
             std::cerr << "Unrecognized platform " << platformName << std::endl;
@@ -742,7 +748,8 @@ bool CLMiner::initDevice()
         m_hwmoninfo.devicePciId = m_deviceDescriptor.uniqueId;
         m_hwmoninfo.deviceIndex = -1;  // Will be later on mapped by nvml (see Farm() constructor)
     }
-    else if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Clover)
+    else if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Clover ||
+             m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Apple)
     {
         m_hwmoninfo.deviceType = HwMonitorInfoType::UNKNOWN;
         m_hwmoninfo.devicePciId = m_deviceDescriptor.uniqueId;
