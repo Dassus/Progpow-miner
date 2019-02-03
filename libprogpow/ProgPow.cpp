@@ -100,7 +100,8 @@ std::string ProgPow::getKern(uint64_t prog_seed, uint32_t dagelms, kernel_t kern
         ret << "        uint32_t mix[PROGPOW_REGS],\n";
         ret << "        const dag_t *g_dag,\n";
         ret << "        const uint32_t c_dag[PROGPOW_CACHE_WORDS],\n";
-        ret << "        const bool hack_false)\n";
+        ret << "        const bool hack_false,\n";
+        ret << "        const uint32_t lane_id)\n";
     }
     else
     {
@@ -121,14 +122,6 @@ std::string ProgPow::getKern(uint64_t prog_seed, uint32_t dagelms, kernel_t kern
 
     ret << "dag_t data_dag;\n";
     ret << "uint32_t offset, data;\n";
-
-    if (kern == KERNEL_CUDA)
-        ret << "const uint32_t lane_id = threadIdx.x & (PROGPOW_LANES-1);\n";
-    else
-    {
-        //ret << "const uint32_t lane_id = get_local_id(0) & (PROGPOW_LANES-1);\n";
-        //ret << "const uint32_t group_id = get_local_id(0) / PROGPOW_LANES;\n";
-    }
 
     // Global memory access
     // lanes access sequential locations

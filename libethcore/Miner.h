@@ -90,7 +90,8 @@ enum class ClPlatformTypeEnum
     Unknown,
     Amd,
     Clover,
-    Nvidia
+    Nvidia,
+    Apple
 };
 
 enum class SolutionAccountingEnum
@@ -154,11 +155,14 @@ struct HwSensorsType
     int tempC = 0;
     int fanP = 0;
     double powerW = 0.0;
+    double voltage = 0.0;
     string str()
     {
         string _ret = to_string(tempC) + "C " + to_string(fanP) + "%";
         if (powerW)
-            _ret.append(boost::str(boost::format("%6.1f") % powerW));
+            _ret.append(boost::str(boost::format("%6.1f") % powerW) + "W");
+        if (voltage)
+            _ret.append(boost::str(boost::format("%6.3f") % voltage) + "V");
         return _ret;
     };
 };

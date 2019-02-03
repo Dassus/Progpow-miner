@@ -2,6 +2,7 @@
 #define OPENCL_PLATFORM_NVIDIA  1
 #define OPENCL_PLATFORM_AMD     2
 #define OPENCL_PLATFORM_CLOVER  3
+#define OPENCL_PLATFORM_APPLE   4
 
 #ifndef MAX_SEARCH_RESULTS
 #define MAX_SEARCH_RESULTS 4U
@@ -182,7 +183,7 @@ typedef struct
 __attribute__((reqd_work_group_size(GROUP_SIZE, 1, 1)))
 #endif
 __kernel void progpow_search(
-    __global search_results* restrict g_output,
+    __global volatile search_results* restrict g_output,
     __constant hash32_t const* g_header,
     __global ulong8 const* _g_dag,
     ulong start_nonce,

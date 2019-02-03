@@ -1055,6 +1055,7 @@ Json::Value ApiConnection::getMinerStatDetailPerMiner(
     sensors.append(_t.miners.at(_index).sensors.tempC);
     sensors.append(_t.miners.at(_index).sensors.fanP);
     sensors.append(_t.miners.at(_index).sensors.powerW);
+    sensors.append(_t.miners.at(_index).sensors.voltage);
 
     hwinfo["sensors"] = sensors;
 

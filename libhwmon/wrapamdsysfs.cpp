@@ -251,38 +251,45 @@ int wrap_amdsysfs_get_fanpcnt(wrap_amdsysfs_handle* sysfsh, int index, unsigned 
 
 int wrap_amdsysfs_get_power_usage(wrap_amdsysfs_handle* sysfsh, int index, unsigned int* milliwatts)
 {
-    try
-    {
-        if (index < 0 || index >= sysfsh->sysfs_gpucount)
-            return -1;
+    if (index < 0 || index >= sysfsh->sysfs_gpucount) 
+        return -1;
 
-        int gpuindex = sysfsh->sysfs_device_id[index];
+    int gpuindex = sysfsh->sysfs_device_id[index];
+    int hwmonindex = sysfsh->sysfs_hwmon_id[index];
+    if (hwmonindex < 0)
+        return -1;
 
-        char dbuf[120];
-        snprintf(dbuf, 120, "/sys/kernel/debug/dri/%d/amdgpu_pm_info", gpuindex);
+    char dbuf[120];
+    snprintf(dbuf, 120, "/sys/class/drm/card%u/device/hwmon/hwmon%u/power1_average", gpuindex,
+        hwmonindex);
 
-        std::ifstream ifs(dbuf, std::ios::binary);
-        std::string line;
+    unsigned int pwr_avg = 0;
+    getFileContentValue(dbuf, pwr_avg);
+    if (pwr_avg > 0)
+        *milliwatts = (unsigned int)(pwr_avg / 1000);
 
-        while (std::getline(ifs, line))
-        {
-            std::smatch sm;
-            std::regex regex(R"(([\d|\.]+) W \(average GPU\))");
-            if (std::regex_search(line, sm, regex))
-            {
-                if (sm.size() == 2)
-                {
-                    double watt = atof(sm.str(1).c_str());
-                    *milliwatts = (unsigned int)(watt * 1000);
-                    return 0;
-                }
-            }
-        }
-    }
-    catch (const std::exception& ex)
-    {
-        cwarn << "Error in amdsysfs_get_power_usage: " << ex.what();
-    }
+    return 0;
+}
 
-    return -1;
+int wrap_amdsysfs_get_voltage(wrap_amdsysfs_handle* sysfsh, int index, unsigned int* voltage)
+{
+    if (index < 0 || index >= sysfsh->sysfs_gpucount)
+        return -1;
+
+    int gpuindex = sysfsh->sysfs_device_id[index];
+    int hwmonindex = sysfsh->sysfs_hwmon_id[index];
+    if (hwmonindex < 0)
+        return -1;
+
+    char dbuf[120];
+    snprintf(
+        dbuf, 120, "/sys/class/drm/card%u/device/hwmon/hwmon%u/in0_input", gpuindex, hwmonindex);
+
+    unsigned int vdd = 0;
+    getFileContentValue(dbuf, vdd);
+
+    if (vdd > 0)
+        *voltage = (unsigned int)(vdd);
+
+    return 0;
 }
