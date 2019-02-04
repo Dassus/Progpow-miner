@@ -657,6 +657,7 @@ void CLMiner::enumDevices(
             deviceDescriptor.clMaxMemAlloc = device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
             deviceDescriptor.clMaxWorkGroup = device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
             deviceDescriptor.clMaxComputeUnits = device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>();
+            deviceDescriptor.clBinaryKernel = false;
 
             // Apparently some 36 CU devices return a bogus 14!!!
             deviceDescriptor.clMaxComputeUnits =
@@ -853,7 +854,7 @@ bool CLMiner::initDevice()
     /* If we have a binary kernel, we load it in tandem with the opencl,
        that way, we can use the dag generate opencl code and fall back on
        the default kernel if loading fails for whatever reason */
-    bool loadedBinary = false;
+    m_deviceDescriptor.clBinaryKernel = false;
 
     if (!m_settings.noBinary)
     {
@@ -886,7 +887,7 @@ bool CLMiner::initDevice()
                     program.build({m_device}, options);
                     m_ethash_search_kernel = cl::Kernel(program, "ethash_search");
                     m_ethash_search_kernel.setArg(0, m_searchBuffer);
-                    loadedBinary = true;
+                    m_deviceDescriptor.clBinaryKernel = true;
                 }
                 catch (cl::Error const&)
                 {
@@ -896,7 +897,7 @@ bool CLMiner::initDevice()
         catch (...)
         {
         }
-        if (!loadedBinary)
+        if (!m_deviceDescriptor.clBinaryKernel)
         {
             cwarn << "Failed to load binary kernel: " << fname_strm.str();
             cwarn << "Falling back to OpenCL kernel...";
