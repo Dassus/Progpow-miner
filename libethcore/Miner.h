@@ -207,6 +207,7 @@ struct DeviceDescriptor
     string clNvCompute;
     unsigned int clNvComputeMajor;
     unsigned int clNvComputeMinor;
+    bool clBinaryKernel;
 
     bool cuDetected;  // For CUDA detected devices
     string cuName;

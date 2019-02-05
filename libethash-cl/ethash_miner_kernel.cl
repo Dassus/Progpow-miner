@@ -394,7 +394,7 @@ __kernel void ethash_search(
         uint slot = atomic_inc(&g_output->count);
         if (slot < MAX_SEARCH_RESULTS) 
         {
-            g_output->result[slot].nonce = (start_nonce + gid);
+            g_output->result[slot].nonce  = gid + start_nonce;
             g_output->result[slot].mix[0] = mixhash[0].s0;
             g_output->result[slot].mix[1] = mixhash[0].s1;
             g_output->result[slot].mix[2] = mixhash[1].s0;
