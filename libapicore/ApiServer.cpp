@@ -1140,11 +1140,11 @@ std::string ApiConnection::getHttpMinerStatDetail()
          << "<th>Device</th>"
          << "<th>Mode</th>"
          << "<th>Paused</th>"
-         << "<th class=right>Hash Rate</th>"
-         << "<th class=right>Solutions</th>"
-         << "<th class=right>Temp.</th>"
-         << "<th class=right>Fan %</th>"
-         << "<th class=right>Power W</th>"
+         << "<th>Hash Rate</th>"
+         << "<th>Solutions</th>"
+         << "<th>Temp.</th>"
+         << "<th>Fan %</th>"
+         << "<th>Power W</th>"
          << "</tr>"
          << "</thead><tbody>";
 
