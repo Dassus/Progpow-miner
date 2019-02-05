@@ -854,9 +854,10 @@ bool CLMiner::initDevice()
     /* If we have a binary kernel, we load it in tandem with the opencl,
        that way, we can use the dag generate opencl code and fall back on
        the default kernel if loading fails for whatever reason */
+
     m_deviceDescriptor.clBinaryKernel = false;
 
-    if (!m_settings.noBinary)
+    if (!m_settings.noBinary && (m_deviceDescriptor.clPlatformType != ClPlatformTypeEnum::Nvidia))
     {
         std::ifstream kernel_file;
         vector<unsigned char> bin_data;
