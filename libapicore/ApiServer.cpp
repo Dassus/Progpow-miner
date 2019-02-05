@@ -1143,7 +1143,7 @@ std::string ApiConnection::getHttpMinerStatDetail()
          << "<th class=right>Solutions</th>"
          << "<th class=right>Temp.</th>"
          << "<th class=right>Fan %</th>"
-         << "<th class=right>Power</th>"
+         << "<th class=right>Power W</th>"
          << "</tr>"
          << "</thead><tbody>";
 
