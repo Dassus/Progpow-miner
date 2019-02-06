@@ -328,15 +328,17 @@ public:
         app.add_option("--opencl-device,--opencl-devices,--cl-devices", m_CLSettings.devices, "");
 
         app.add_option("--cl-platforms", m_ClPlatforms, "");
+        app.add_flag("--cl-list-platforms", m_shouldListClPlatforms, "");
 
         app.add_option("--cl-global-work", m_CLSettings.globalWorkSizeMultiplier, "", true)
             ->check(CLI::Range(32, 65536));
 
         app.add_set("--cl-local-work", m_CLSettings.localWorkSize, {64, 128, 256}, "", true);
 
-        app.add_flag("--cl-nobin", m_CLSettings.noBinary, "");
 
-        app.add_flag("--cl-list-platforms", m_shouldListClPlatforms, "");
+#if _BINKERN
+        app.add_flag("--cl-nobin", m_CLSettings.noBinary, "");
+#endif
 
 #endif
 
@@ -930,6 +932,7 @@ public:
                  << "                        Be advised passwords are sent unencrypted over plain TCP!!" << endl;
         }
 
+#if _OPENCL
         if (ctx == "cl")
         {
             cout << "OpenCL Extended Options :" << endl
@@ -954,11 +957,15 @@ public:
                  << "                        Value will be adjusted to nearest power of 2" << endl
                  << "    --cl-local-work     UINT {64,128,256} Default = " << m_CLSettings.localWorkSize << endl
                  << "                        Set the local work size" << endl
+#if _BINKERN
                  << "    --cl-nobin          FLAG" << endl
                  << "                        Use openCL kernel. Do not load binary kernel" << endl
+#endif
                  << endl;
         }
+#endif
 
+#if _CUDA
         if (ctx == "cu")
         {
             cout << "CUDA Extended Options :" << endl
@@ -999,7 +1006,8 @@ public:
                  << "                                from the device" << endl
                  << endl;
         }
-
+#endif
+#if _CPU
         if (ctx == "cp")
         {
             cout << "CPU Extended Options :" << endl
@@ -1012,6 +1020,7 @@ public:
                  << "                        If not set all available CPUs will be used" << endl
                  << endl;
         }
+#endif
 
         if (ctx == "misc")
         {
