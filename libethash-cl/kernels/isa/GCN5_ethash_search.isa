@@ -192,6 +192,8 @@ __kernel void ethash_search(
         s_cbranch_scc1  .exit
 
         v_mov_b32       local_id, v0
+        s_mov_b32       group_id, s10
+
         s_mov_b32       fnv_prime, 0x1000193
         s_load_dwordx2  header, args, arg_header
         s_load_dwordx2  dag, args, arg_dag
