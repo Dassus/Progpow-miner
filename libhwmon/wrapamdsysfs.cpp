@@ -266,9 +266,38 @@ int wrap_amdsysfs_get_power_usage(wrap_amdsysfs_handle* sysfsh, int index, unsig
     unsigned int pwr_avg = 0;
     getFileContentValue(dbuf, pwr_avg);
     if (pwr_avg > 0)
+    {
         *milliwatts = (unsigned int)(pwr_avg / 1000);
+        return 0;
+    }
+    // Must be older driver, try something different.
+    // Unfortunately root priviledge will be required
+    try
+    {
+        char dbuf[120];
+        snprintf(dbuf, sizeof(dbuf), "/sys/kernel/debug/dri/%d/amdgpu_pm_info", gpuindex);
 
-    return 0;
+        std::ifstream ifs(dbuf, std::ios::binary);
+        std::string line;
+
+        while (std::getline(ifs, line))
+        {
+            std::smatch sm;
+            std::regex regex(R"(([\d|\.]+) W \(average GPU\))");
+            if (std::regex_search(line, sm, regex))
+            {
+                if (sm.size() == 2)
+                {
+                    *milliwatts = (unsigned int)(stod(sm.str(1)) * 1000);
+                    return 0;
+                }
+            }
+        }
+    }
+    catch (const std::exception& ex)
+    {
+    }
+    return -1;
 }
 
 int wrap_amdsysfs_get_voltage(wrap_amdsysfs_handle* sysfsh, int index, unsigned int* voltage)
