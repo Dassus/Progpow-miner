@@ -31,6 +31,8 @@ static bool getFileContentValue(const char* filename, unsigned int& value)
 {
     value = 0;
     std::ifstream ifs(filename, std::ios::binary);
+    if (!ifs.good())
+        return false;
     std::string line;
     std::getline(ifs, line);
     char* p = (char*)line.c_str();
@@ -213,11 +215,10 @@ int wrap_amdsysfs_get_tempC(wrap_amdsysfs_handle* sysfsh, int index, unsigned in
         dbuf, 120, "/sys/class/drm/card%d/device/hwmon/hwmon%d/temp1_input", gpuindex, hwmonindex);
 
     unsigned int temp = 0;
-    getFileContentValue(dbuf, temp);
+    if (!getFileContentValue(dbuf, temp))
+        return -1;
 
-    if (temp > 0)
-        *tempC = temp / 1000;
-
+    *tempC = temp / 1000;
     return 0;
 }
 
@@ -235,23 +236,28 @@ int wrap_amdsysfs_get_fanpcnt(wrap_amdsysfs_handle* sysfsh, int index, unsigned 
 
     char dbuf[120];
     snprintf(dbuf, 120, "/sys/class/drm/card%d/device/hwmon/hwmon%d/pwm1", gpuindex, hwmonindex);
-    getFileContentValue(dbuf, pwm);
+    if (getFileContentValue(dbuf, pwm))
+    {
+        snprintf(
+            dbuf, 120, "/sys/class/drm/card%d/device/hwmon/hwmon%d/pwm1_max", gpuindex, hwmonindex);
+        if (getFileContentValue(dbuf, pwmMax))
+        {
+            snprintf(dbuf, 120, "/sys/class/drm/card%d/device/hwmon/hwmon%d/pwm1_min", gpuindex,
+                hwmonindex);
+            if (getFileContentValue(dbuf, pwmMin))
+            {
+                *fanpcnt = (unsigned int)(double(pwm - pwmMin) / double(pwmMax - pwmMin) * 100.0);
+                return 0;
+            }
+        }
+    }
 
-    snprintf(
-        dbuf, 120, "/sys/class/drm/card%d/device/hwmon/hwmon%d/pwm1_max", gpuindex, hwmonindex);
-    getFileContentValue(dbuf, pwmMax);
-
-    snprintf(
-        dbuf, 120, "/sys/class/drm/card%d/device/hwmon/hwmon%d/pwm1_min", gpuindex, hwmonindex);
-    getFileContentValue(dbuf, pwmMin);
-
-    *fanpcnt = (unsigned int)(double(pwm - pwmMin) / double(pwmMax - pwmMin) * 100.0);
-    return 0;
+    return -1;
 }
 
 int wrap_amdsysfs_get_power_usage(wrap_amdsysfs_handle* sysfsh, int index, unsigned int* milliwatts)
 {
-    if (index < 0 || index >= sysfsh->sysfs_gpucount) 
+    if (index < 0 || index >= sysfsh->sysfs_gpucount)
         return -1;
 
     int gpuindex = sysfsh->sysfs_device_id[index];
@@ -264,12 +270,13 @@ int wrap_amdsysfs_get_power_usage(wrap_amdsysfs_handle* sysfsh, int index, unsig
         hwmonindex);
 
     unsigned int pwr_avg = 0;
-    getFileContentValue(dbuf, pwr_avg);
-    if (pwr_avg > 0)
+
+    if (getFileContentValue(dbuf, pwr_avg))
     {
         *milliwatts = (unsigned int)(pwr_avg / 1000);
         return 0;
     }
+
     // Must be older driver, try something different.
     // Unfortunately root priviledge will be required
     try
@@ -289,15 +296,15 @@ int wrap_amdsysfs_get_power_usage(wrap_amdsysfs_handle* sysfsh, int index, unsig
                 if (sm.size() == 2)
                 {
                     *milliwatts = (unsigned int)(stod(sm.str(1)) * 1000);
-                    return 0;
                 }
             }
         }
     }
     catch (const std::exception& ex)
     {
+        return -1;
     }
-    return -1;
+    return 0;
 }
 
 int wrap_amdsysfs_get_voltage(wrap_amdsysfs_handle* sysfsh, int index, unsigned int* voltage)
@@ -315,10 +322,9 @@ int wrap_amdsysfs_get_voltage(wrap_amdsysfs_handle* sysfsh, int index, unsigned 
         dbuf, 120, "/sys/class/drm/card%u/device/hwmon/hwmon%u/in0_input", gpuindex, hwmonindex);
 
     unsigned int vdd = 0;
-    getFileContentValue(dbuf, vdd);
+    if (!getFileContentValue(dbuf, vdd))
+        return -1;
 
-    if (vdd > 0)
-        *voltage = (unsigned int)(vdd);
-
+    *voltage = (unsigned int)(vdd);
     return 0;
 }
