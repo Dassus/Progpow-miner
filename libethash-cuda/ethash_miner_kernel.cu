@@ -126,9 +126,9 @@ DEV_INLINE uint2 chi(const uint2 a, const uint2 b, const uint2 c)
 #endif
 }
 
-DEV_INLINE void keccak_f1600_init(uint2* state)
+DEV_INLINE void keccak_f1600_init(uint2* s, uint2* state)
 {
-    uint2 s[25];
+    //uint2 s[25];
     uint2 t[5], u, v;
     const uint2 u2zero = make_uint2(0, 0);
 
@@ -416,7 +416,7 @@ DEV_INLINE void keccak_f1600_init(uint2* state)
     s[24] ^= u;
 
     /* rho pi: b[..] = rotl(a[..], ..) */
-    u = s[1];
+    //u = s[1];
 
     s[1] = ROL2(s[6], 44);
     s[6] = ROL2(s[9], 20);
@@ -449,9 +449,9 @@ DEV_INLINE void keccak_f1600_init(uint2* state)
         state[i] = s[i];
 }
 
-DEV_INLINE uint64_t keccak_f1600_final(uint2* state)
+DEV_INLINE uint64_t keccak_f1600_final(uint2* s, uint2* state)
 {
-    uint2 s[25];
+    //uint2 s[25];
     uint2 t[5], u, v;
     const uint2 u2zero = make_uint2(0, 0);
 
@@ -464,6 +464,8 @@ DEV_INLINE uint64_t keccak_f1600_final(uint2* state)
     s[14] = u2zero;
     s[15] = u2zero;
     s[16] = make_uint2(0, 0x80000000);
+
+    #pragma unroll
     for (uint32_t i = 17; i < 25; i++)
         s[i] = u2zero;
 
@@ -733,9 +735,7 @@ DEV_INLINE void SHA3_512(uint2* s)
 
     #pragma unroll
     for (int i = 9; i < 25; i++)
-    {
         s[i] = u2zero;
-    }
 
     for (int i = 0; i < 23; i++)
     {
@@ -923,10 +923,11 @@ DEV_INLINE bool compute_hash(uint64_t nonce, uint2* mix_hash)
 {
     // sha3_512(header .. nonce)
     uint2 state[12];
+    uint2 s[25];
 
     state[4] = vectorize(nonce);
 
-    keccak_f1600_init(state);
+    keccak_f1600_init(s, state);
 
     // Threads work together in this phase in groups of 8.
     const int thread_id = threadIdx.x & (THREADS_PER_HASH - 1);
@@ -974,9 +975,11 @@ DEV_INLINE bool compute_hash(uint64_t nonce, uint2* mix_hash)
 
             for (uint32_t b = 0; b < 4; b++)
             {
+                uint32_t ab = a + b;
+                #pragma unroll
                 for (int p = 0; p < _PARALLEL_HASH; p++)
                 {
-                    offset[p] = fnv(init0[p] ^ (a + b), ((uint32_t*)&mix[p])[b]) % d_dag_size;
+                    offset[p] = fnv(init0[p] ^ ab, ((uint32_t*)&mix[p])[b]) % d_dag_size;
                     offset[p] = SHFL(offset[p], t, THREADS_PER_HASH);
                     mix[p] = fnv4(mix[p], d_dag[offset[p]].uint4s[thread_id]);
                 }
@@ -989,14 +992,10 @@ DEV_INLINE bool compute_hash(uint64_t nonce, uint2* mix_hash)
             uint32_t thread_mix = fnv_reduce(mix[p]);
 
             // update mix across threads
-            shuffle[0].x = SHFL(thread_mix, 0, THREADS_PER_HASH);
-            shuffle[0].y = SHFL(thread_mix, 1, THREADS_PER_HASH);
-            shuffle[1].x = SHFL(thread_mix, 2, THREADS_PER_HASH);
-            shuffle[1].y = SHFL(thread_mix, 3, THREADS_PER_HASH);
-            shuffle[2].x = SHFL(thread_mix, 4, THREADS_PER_HASH);
-            shuffle[2].y = SHFL(thread_mix, 5, THREADS_PER_HASH);
-            shuffle[3].x = SHFL(thread_mix, 6, THREADS_PER_HASH);
-            shuffle[3].y = SHFL(thread_mix, 7, THREADS_PER_HASH);
+            shuffle[0] = make_uint2(SHFL(thread_mix, 0, THREADS_PER_HASH), SHFL(thread_mix, 1, THREADS_PER_HASH));
+            shuffle[1] = make_uint2(SHFL(thread_mix, 2, THREADS_PER_HASH), SHFL(thread_mix, 3, THREADS_PER_HASH));
+            shuffle[2] = make_uint2(SHFL(thread_mix, 4, THREADS_PER_HASH), SHFL(thread_mix, 5, THREADS_PER_HASH));
+            shuffle[3] = make_uint2(SHFL(thread_mix, 6, THREADS_PER_HASH), SHFL(thread_mix, 7, THREADS_PER_HASH));
 
             if ((i + p) == thread_id)
             {
@@ -1010,7 +1009,7 @@ DEV_INLINE bool compute_hash(uint64_t nonce, uint2* mix_hash)
     }
 
     // keccak_256(keccak_512(header..nonce) .. mix);
-    if (cuda_swab64(keccak_f1600_final(state)) > d_target)
+    if (cuda_swab64(keccak_f1600_final(s, state)) > d_target)
         return true;
 
     mix_hash[0] = state[8];
