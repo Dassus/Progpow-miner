@@ -888,7 +888,7 @@ DEV_INLINE void SHA3_512(uint2* s)
     s[24] ^= u;
 
     /* rho pi: b[..] = rotl(a[..], ..) */
-    u = s[1];
+    //u = s[1];
 
     s[1] = ROL2(s[6], 44);
     s[6] = ROL2(s[9], 20);
