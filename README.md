@@ -80,7 +80,7 @@ See [docs/BUILD.md](docs/BUILD.md) for build/compilation details.
 
 ## Maintainers & Authors
 
-[![Gitter](https://img.shields.io/gitter/room/miscellaneousbits/ethminer.svg)][Gitter]
+[![Gitter](https://img.shields.io/gitter/room/ethereum-mining/ethminer.svg)][Gitter]
 
 The list of current and past maintainers, authors and contributors to the ethminer project.
 Ordered alphabetically. [Contributors statistics since 2015-08-20].
@@ -99,7 +99,7 @@ Ordered alphabetically. [Contributors statistics since 2015-08-20].
 
 ## Contribute
 
-[![Gitter](https://img.shields.io/gitter/room/miscellaneousbits/ethminer.svg)][Gitter]
+[![Gitter](https://img.shields.io/gitter/room/ethereum-mining/ethminer.svg)][Gitter]
 
 To meet the community, ask general questions and chat about ethminer join [the ethminer channel on Gitter][Gitter].
 
@@ -180,5 +180,5 @@ You have to upgrade your Nvidia drivers. On Linux, install `nvidia-396` package 
 
 [AppVeyor]: https://ci.appveyor.com/project/miscellaneousbits/ethminer
 [Contributors statistics since 2015-08-20]: https://github.com/miscellaneousbits/ethminer/graphs/contributors?from=2015-08-20
-[Gitter]: https://gitter.im/miscellaneousbits/ethminer
+[Gitter]: https://gitter.im/ethereum-mining/ethminer
 [Releases]: https://github.com/miscellaneousbits/ethminer/releases
