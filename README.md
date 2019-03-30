@@ -2,7 +2,7 @@
 
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg)](https://github.com/RichardLitt/standard-readme)
 [![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)][Gitter]
-[![Releases](https://img.shields.io/github/downloads/ethereum-mining/ethminer/total.svg)][Releases]
+[![Releases](https://img.shields.io/github/downloads/miscellaneousbits/ethminer/total.svg)][Releases]
 
 > Ethereum miner with OpenCL, CUDA and stratum support
 
@@ -34,7 +34,7 @@
 
 ## Install
 
-[![Releases](https://img.shields.io/github/downloads/ethereum-mining/ethminer/total.svg)][Releases]
+[![Releases](https://img.shields.io/github/downloads/miscellaneousbits/ethminer/total.svg)][Releases]
 
 Standalone **executables** for *Linux*, *macOS* and *Windows* are provided in
 the [Releases] section.
@@ -43,8 +43,8 @@ accessible from command line. The ethminer is ready to go.
 
 | Builds | Release | Date |
 | ------ | ------- | ---- |
-| Last   | [![GitHub release](https://img.shields.io/github/release/ethereum-mining/ethminer/all.svg)](https://github.com/ethereum-mining/ethminer/releases) | [![GitHub Release Date](https://img.shields.io/github/release-date-pre/ethereum-mining/ethminer.svg)](https://github.com/ethereum-mining/ethminer/releases) |
-| Stable | [![GitHub release](https://img.shields.io/github/release/ethereum-mining/ethminer.svg)](https://github.com/ethereum-mining/ethminer/releases/latest) | [![GitHub Release Date](https://img.shields.io/github/release-date/ethereum-mining/ethminer.svg)](https://github.com/ethereum-mining/ethminer/releases/latest) |
+| Last   | [![GitHub release](https://img.shields.io/github/release/miscellaneousbits/ethminer/all.svg)](https://github.com/miscellaneousbits/ethminer/releases) | [![GitHub Release Date](https://img.shields.io/github/release-date-pre/miscellaneousbits/ethminer.svg)](https://github.com/miscellaneousbits/ethminer/releases) |
+| Stable | [![GitHub release](https://img.shields.io/github/release/miscellaneousbits/ethminer.svg)](https://github.com/miscellaneousbits/ethminer/releases/latest) | [![GitHub Release Date](https://img.shields.io/github/release-date/miscellaneousbits/ethminer.svg)](https://github.com/miscellaneousbits/ethminer/releases/latest) |
 
 
 ## Usage
@@ -68,10 +68,9 @@ Check our [samples](docs/POOL_EXAMPLES_ETH.md) to see how to connect to differen
 
 | CI            | OS            | Status  | Development builds |
 | ------------- | ------------- | -----   | -----------------  |
-| [Travis CI]   | Linux, macOS  | [![Travis CI](https://img.shields.io/travis/ethereum-mining/ethminer/master.svg)][Travis CI]    | ✗ No build artifacts, [Amazon S3 is needed] for this |
-| [AppVeyor]    | Windows       | [![AppVeyor](https://img.shields.io/appveyor/ci/ethereum-mining/ethminer/master.svg)][AppVeyor] | ✓ Build artifacts available for all PRs and branches |
+| [AppVeyor]    | Windows       | [![AppVeyor](https://img.shields.io/appveyor/ci/jean-m-cyr/ethminer/master.svg)][AppVeyor] | ✓ Build artifacts available for all PRs and branches |
 
-The AppVeyor system automatically builds a Windows .exe for every commit. The latest version is always available [on the landing page](https://ci.appveyor.com/project/ethereum-mining/ethminer) or you can [browse the history](https://ci.appveyor.com/project/ethereum-mining/ethminer/history) to access previous builds.
+The AppVeyor system automatically builds a Windows .exe for every commit. The latest version is always available [on the landing page](https://ci.appveyor.com/project/jean-m-cyr/ethminer) or you can [browse the history](https://ci.appveyor.com/project/jean-m-cyr/ethminer/history) to access previous builds.
 
 To download the .exe on a build under `Job name` select the CUDA version you use, choose `Artifacts` then download the zip file.
 
@@ -81,26 +80,26 @@ See [docs/BUILD.md](docs/BUILD.md) for build/compilation details.
 
 ## Maintainers & Authors
 
-[![Gitter](https://img.shields.io/gitter/room/ethereum-mining/ethminer.svg)][Gitter]
+[![Gitter](https://img.shields.io/gitter/room/miscellaneousbits/ethminer.svg)][Gitter]
 
 The list of current and past maintainers, authors and contributors to the ethminer project.
 Ordered alphabetically. [Contributors statistics since 2015-08-20].
 
-| Name                  | Contact                                                      |     |
-| --------------------- | ------------------------------------------------------------ | --- |
-| Andrea Lanfranchi     | [@AndreaLanfranchi](https://github.com/AndreaLanfranchi)     | ETH: 0xa7e593bde6b5900262cf94e4d75fb040f7ff4727 |
-| EoD                   | [@EoD](https://github.com/EoD)                               |     |
-| Genoil                | [@Genoil](https://github.com/Genoil)                         |     |
-| goobur                | [@goobur](https://github.com/goobur)                         |     |
-| Marius van der Wijden | [@MariusVanDerWijden](https://github.com/MariusVanDerWijden) | ETH: 0x57d22b967c9dc64e5577f37edf1514c2d8985099 |
-| Paweł Bylica          | [@chfast](https://github.com/chfast)                         | ETH: 0x8FB24C5b5a75887b429d886DBb57fd053D4CF3a2 |
-| Philipp Andreas       | [@smurfy](https://github.com/smurfy)                         |     |
-| Stefan Oberhumer      | [@StefanOberhumer](https://github.com/StefanOberhumer)       |     |
+| Name                  | Contact                                                      |
+| --------------------- | ------------------------------------------------------------ |
+| Andrea Lanfranchi     | [@AndreaLanfranchi](https://github.com/AndreaLanfranchi)     |
+| EoD                   | [@EoD](https://github.com/EoD)                               |
+| Genoil                | [@Genoil](https://github.com/Genoil)                         |
+| goobur                | [@goobur](https://github.com/goobur)                         |
+| Marius van der Wijden | [@MariusVanDerWijden](https://github.com/MariusVanDerWijden) |
+| Paweł Bylica          | [@chfast](https://github.com/chfast)                         |
+| Philipp Andreas       | [@smurfy](https://github.com/smurfy)                         |
+| Stefan Oberhumer      | [@StefanOberhumer](https://github.com/StefanOberhumer)       |
 
 
 ## Contribute
 
-[![Gitter](https://img.shields.io/gitter/room/ethereum-mining/ethminer.svg)][Gitter]
+[![Gitter](https://img.shields.io/gitter/room/miscellaneousbits/ethminer.svg)][Gitter]
 
 To meet the community, ask general questions and chat about ethminer join [the ethminer channel on Gitter][Gitter].
 
@@ -179,11 +178,7 @@ Error: Insufficient CUDA driver: 9010
 You have to upgrade your Nvidia drivers. On Linux, install `nvidia-396` package or newer.
 
 
-[Amazon S3 is needed]: https://docs.travis-ci.com/user/uploading-artifacts/
-[AppVeyor]: https://ci.appveyor.com/project/ethereum-mining/ethminer
-[cpp-ethereum]: https://github.com/ethereum/cpp-ethereum
-[Contributors statistics since 2015-08-20]: https://github.com/ethereum-mining/ethminer/graphs/contributors?from=2015-08-20
-[Genoil's fork]: https://github.com/Genoil/cpp-ethereum
-[Gitter]: https://gitter.im/ethereum-mining/ethminer
-[Releases]: https://github.com/ethereum-mining/ethminer/releases
-[Travis CI]: https://travis-ci.org/ethereum-mining/ethminer
+[AppVeyor]: https://ci.appveyor.com/project/miscellaneousbits/ethminer
+[Contributors statistics since 2015-08-20]: https://github.com/miscellaneousbits/ethminer/graphs/contributors?from=2015-08-20
+[Gitter]: https://gitter.im/miscellaneousbits/ethminer
+[Releases]: https://github.com/miscellaneousbits/ethminer/releases
