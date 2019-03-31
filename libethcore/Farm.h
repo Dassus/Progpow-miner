@@ -53,7 +53,6 @@ struct FarmSettings
     unsigned dagLoadMode = 0;         // 0 = Parallel; 1 = Serialized
     bool noEval = false;              // Whether or not to re-evaluate solutions
     unsigned hwMon = 0;               // 0 - No monitor; 1 - Temp and Fan; 2 - Temp Fan Power
-    unsigned ergodicity = 0;          // 0=default, 1=per session, 2=per job
     uint64_t startNonce = 0;          // 0=not set, each other value: use it as nonce
     unsigned nonceSegmentWidth = 32;  //
     unsigned tempStart = 40;          // Temperature threshold to restart mining (if paused)
@@ -76,11 +75,6 @@ public:
     ~Farm();
 
     static Farm& f() { return *m_this; }
-
-    /**
-     * @brief Randomizes the nonce scrambler
-     */
-    void shuffle();
 
     /**
      * @brief Sets the current mining mission.
@@ -235,8 +229,6 @@ public:
     unsigned get_tstart() override { return m_Settings.tempStart; }
 
     unsigned get_tstop() override { return m_Settings.tempStop; }
-
-    unsigned get_ergodicity() override { return m_Settings.ergodicity; }
 
     /**
      * @brief Called from a Miner to note a WorkPackage has a solution.

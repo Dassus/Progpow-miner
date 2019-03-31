@@ -432,15 +432,6 @@ void ApiConnection::processRequest(Json::Value& jRequest, Json::Value& jResponse
         jResponse["result"] = getMinerStatDetail();
     }
 
-    else if (_method == "miner_shuffle")
-    {
-        if (!checkApiWriteAccess(m_readonly, jResponse))
-            return;
-        // Gives nonce scrambler a new range
-        jResponse["result"] = true;
-        Farm::f().shuffle();
-    }
-
     else if (_method == "miner_ping")
     {
         // Replies back to (check for liveness)
