@@ -22,5 +22,4 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
    are generated from progpow_miner_kernel.cu
    using cmake ../libethash-cl/bin2h.cmake
 */
-extern const char* cu_progpow_miner_kernel(void);
-extern size_t sizeof_cu_progpow_miner_kernel(void);
+extern const char* cu_progpow_miner_kernel;
