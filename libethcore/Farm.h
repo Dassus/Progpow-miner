@@ -70,9 +70,8 @@ class Farm : public FarmFace
 public:
     unsigned tstart = 0, tstop = 0;
 
-    Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection,
-        FarmSettings _settings, CUSettings _CUSettings, CLSettings _CLSettings,
-        CPSettings _CPSettings);
+    Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection, FarmSettings _settings, CUSettings _CUSettings,
+        CLSettings _CLSettings, CPSettings _CPSettings);
 
     ~Farm();
 

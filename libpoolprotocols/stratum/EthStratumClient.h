@@ -73,8 +73,7 @@ public:
     }
     bool isPendingState() override
     {
-        return (m_connecting.load(std::memory_order_relaxed) ||
-                m_disconnecting.load(std::memory_order_relaxed));
+        return (m_connecting.load(std::memory_order_relaxed) || m_disconnecting.load(std::memory_order_relaxed));
     }
 
     void submitHashrate(uint64_t const& rate, string const& id) override;
@@ -89,8 +88,7 @@ private:
     void enqueue_response_plea();
     std::chrono::milliseconds dequeue_response_plea();
     void clear_response_pleas();
-    void resolve_handler(
-        const boost::system::error_code& ec, boost::asio::ip::tcp::resolver::iterator i);
+    void resolve_handler(const boost::system::error_code& ec, boost::asio::ip::tcp::resolver::iterator i);
     void start_connect();
     void connect_handler(const boost::system::error_code& ec);
     void workloop_timer_elapsed(const boost::system::error_code& ec);
@@ -100,8 +98,7 @@ private:
     void processExtranonce(std::string& enonce);
 
     void recvSocketData();
-    void onRecvSocketDataCompleted(
-        const boost::system::error_code& ec, std::size_t bytes_transferred);
+    void onRecvSocketDataCompleted(const boost::system::error_code& ec, std::size_t bytes_transferred);
     void send(Json::Value const& jReq);
     void sendSocketData();
     void onSendSocketDataCompleted(const boost::system::error_code& ec);

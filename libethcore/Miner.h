@@ -278,9 +278,8 @@ struct TelemetryType
         int hoursSize = (hours.count() > 9 ? (hours.count() > 99 ? 3 : 2) : 1);
         duration -= hours;
         auto minutes = std::chrono::duration_cast<std::chrono::minutes>(duration);
-        _ret << EthGreen << setw(hoursSize) << hours.count() << ":" << setfill('0') << setw(2)
-             << minutes.count() << EthReset << EthWhiteBold << " " << farm.solutions.str()
-             << EthReset << " ";
+        _ret << EthGreen << setw(hoursSize) << hours.count() << ":" << setfill('0') << setw(2) << minutes.count()
+             << EthReset << EthWhiteBold << " " << farm.solutions.str() << EthReset << " ";
 
         /*
         Github : @AndreaLanfranchi
@@ -298,8 +297,8 @@ struct TelemetryType
             magnitude++;
         }
 
-        _ret << EthTealBold << std::fixed << std::setprecision(2) << hr << " "
-             << suffixes[magnitude] << EthReset << " { ";
+        _ret << EthTealBold << std::fixed << std::setprecision(2) << hr << " " << suffixes[magnitude] << EthReset
+             << " { ";
 
         int i = -1;                 // Current miner index
         int m = miners.size() - 1;  // Max miner index
@@ -310,8 +309,8 @@ struct TelemetryType
             if (hr > 0.0f)
                 hr /= pow(1000.0f, magnitude);
 
-            _ret << (miner.paused ? EthRed : "") << miner.prefix << i << " " << EthTeal
-                 << std::fixed << std::setprecision(2) << hr << EthReset;
+            _ret << (miner.paused ? EthRed : "") << miner.prefix << i << " " << EthTeal << std::fixed
+                 << std::setprecision(2) << hr << EthReset;
 
             if (hwmon)
                 _ret << " " << EthTeal << miner.sensors.str() << EthReset;
@@ -499,8 +498,8 @@ protected:
     void invokeAsyncCompile(uint32_t _seed, bool _wait = false);      // Async ProgPoW compilation
     std::atomic<bool> m_progpow_kernel_compile_inprogress = {false};  // Flag signalling background
                                                                       // compile in progress
-    std::atomic<uint32_t> m_progpow_kernel_latest = {0U};  // Holds the highest kernel period in
-                                                           // cache
+    std::atomic<uint32_t> m_progpow_kernel_latest = {0U};             // Holds the highest kernel period in
+                                                                      // cache
 
 private:
     bitset<MinerPauseEnum::Pause_MAX> m_pauseFlags;
@@ -509,8 +508,8 @@ private:
     virtual void ethash_search() = 0;
     virtual void progpow_search() = 0;
     virtual void compileProgPoWKernel(uint32_t _seed, uint32_t _dagelms) = 0;  // Actually it pushes the
-                                                                          // kernel in cache
-    virtual bool loadProgPoWKernel(uint32_t _seed) = 0;  // Effectively loads the kernel into GPU
+                                                                               // kernel in cache
+    virtual bool loadProgPoWKernel(uint32_t _seed) = 0;                        // Effectively loads the kernel into GPU
     virtual void unloadProgPoWKernel(){};
 
     std::atomic<float> m_hr = {0.0};

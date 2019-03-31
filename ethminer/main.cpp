@@ -85,8 +85,8 @@ public:
     {
         // Initialize display timer as sleeper
         m_cliDisplayTimer.expires_from_now(boost::posix_time::pos_infin);
-        m_cliDisplayTimer.async_wait(m_io_strand.wrap(boost::bind(
-            &MinerCLI::cliDisplayInterval_elapsed, this, boost::asio::placeholders::error)));
+        m_cliDisplayTimer.async_wait(m_io_strand.wrap(
+            boost::bind(&MinerCLI::cliDisplayInterval_elapsed, this, boost::asio::placeholders::error)));
 
         // Start io_service in it's own thread
         m_io_thread = std::thread{boost::bind(&boost::asio::io_service::run, &g_io_service)};
@@ -107,8 +107,7 @@ public:
     {
         if (!ec && g_running)
         {
-            string logLine =
-                PoolManager::p().isConnected() ? Farm::f().Telemetry().str() : "Not connected";
+            string logLine = PoolManager::p().isConnected() ? Farm::f().Telemetry().str() : "Not connected";
             minelog << logLine;
 
 #if _DBUS
@@ -116,8 +115,8 @@ public:
 #endif
             // Resubmit timer
             m_cliDisplayTimer.expires_from_now(boost::posix_time::seconds(m_cliDisplayInterval));
-            m_cliDisplayTimer.async_wait(m_io_strand.wrap(boost::bind(
-                &MinerCLI::cliDisplayInterval_elapsed, this, boost::asio::placeholders::error)));
+            m_cliDisplayTimer.async_wait(m_io_strand.wrap(
+                boost::bind(&MinerCLI::cliDisplayInterval_elapsed, this, boost::asio::placeholders::error)));
         }
     }
 
@@ -176,8 +175,7 @@ public:
 
 #if _API
 
-    static void ParseBind(
-        const std::string& inaddr, std::string& outaddr, int& outport, bool advertise_negative_port)
+    static void ParseBind(const std::string& inaddr, std::string& outaddr, int& outport, bool advertise_negative_port)
     {
         std::regex pattern("([\\da-fA-F\\.\\:]*)\\:([\\d\\-]*)");
         std::smatch matches;
@@ -201,8 +199,7 @@ public:
             else
             {
                 if (outport < 1 || outport > 65535)
-                    throw std::invalid_argument(
-                        "Invalid port number. Allowed non zero values in range [1 .. 65535]");
+                    throw std::invalid_argument("Invalid port number. Allowed non zero values in range [1 .. 65535]");
             }
         }
         else
@@ -245,14 +242,12 @@ public:
 
         app.add_set("-A,--algo", m_PoolSettings.algo, {"ethash", "progpow"}, "", true);
 
-        app.add_option("--ergodicity", m_FarmSettings.ergodicity, "", true)
-            ->check(CLI::Range(0, 2));
+        app.add_option("--ergodicity", m_FarmSettings.ergodicity, "", true)->check(CLI::Range(0, 2));
 
         app.add_option("--startnonce", m_FarmSettings.startNonce, "", true)
             ->check(CLI::Range(1ull, 18446744073709551615ull));
 
-        app.add_option("--noncesegmentwidth", m_FarmSettings.nonceSegmentWidth, "", true)
-            ->check(CLI::Range(10, 50));
+        app.add_option("--noncesegmentwidth", m_FarmSettings.nonceSegmentWidth, "", true)->check(CLI::Range(10, 50));
 
         bool version = false;
 
@@ -260,22 +255,17 @@ public:
 
         app.add_option("-v,--verbosity", g_logOptions, "", true)->check(CLI::Range(LOG_NEXT - 1));
 
-        app.add_option("--farm-recheck", m_PoolSettings.getWorkPollInterval, "", true)
-            ->check(CLI::Range(1, 99999));
+        app.add_option("--farm-recheck", m_PoolSettings.getWorkPollInterval, "", true)->check(CLI::Range(1, 99999));
 
-        app.add_option("--farm-retries", m_PoolSettings.connectionMaxRetries, "", true)
-            ->check(CLI::Range(0, 99999));
+        app.add_option("--farm-retries", m_PoolSettings.connectionMaxRetries, "", true)->check(CLI::Range(0, 99999));
 
-        app.add_option("--work-timeout", m_PoolSettings.noWorkTimeout, "", true)
-            ->check(CLI::Range(180, 99999));
+        app.add_option("--work-timeout", m_PoolSettings.noWorkTimeout, "", true)->check(CLI::Range(180, 99999));
 
-        app.add_option("--response-timeout", m_PoolSettings.noResponseTimeout, "", true)
-            ->check(CLI::Range(2, 999));
+        app.add_option("--response-timeout", m_PoolSettings.noResponseTimeout, "", true)->check(CLI::Range(2, 999));
 
         app.add_flag("-R,--report-hashrate,--report-hr", m_PoolSettings.reportHashrate, "");
 
-        app.add_option("--display-interval", m_cliDisplayInterval, "", true)
-            ->check(CLI::Range(1, 1800));
+        app.add_option("--display-interval", m_cliDisplayInterval, "", true)->check(CLI::Range(1, 1800));
 
         app.add_option("--HWMON", m_FarmSettings.hwMon, "", true)->check(CLI::Range(0, 2));
 
@@ -284,8 +274,7 @@ public:
         vector<string> pools;
         app.add_option("-P,--pool", pools, "");
 
-        app.add_option("--failover-timeout", m_PoolSettings.poolFailoverTimeout, "", true)
-            ->check(CLI::Range(0, 999));
+        app.add_option("--failover-timeout", m_PoolSettings.poolFailoverTimeout, "", true)->check(CLI::Range(0, 999));
 
         app.add_flag("--nocolor", g_logNoColor, "");
 
@@ -295,20 +284,19 @@ public:
 
 #if _API
 
-        app.add_option("--api-bind", m_api_bind, "", true)
-            ->check([this](const string& bind_arg) -> string {
-                try
-                {
-                    MinerCLI::ParseBind(bind_arg, this->m_api_address, this->m_api_port, true);
-                }
-                catch (const std::exception& ex)
-                {
-                    throw CLI::ValidationError("--api-bind", ex.what());
-                }
-                // not sure what to return, and the documentation doesn't say either.
-                // https://github.com/CLIUtils/CLI11/issues/144
-                return string("");
-            });
+        app.add_option("--api-bind", m_api_bind, "", true)->check([this](const string& bind_arg) -> string {
+            try
+            {
+                MinerCLI::ParseBind(bind_arg, this->m_api_address, this->m_api_port, true);
+            }
+            catch (const std::exception& ex)
+            {
+                throw CLI::ValidationError("--api-bind", ex.what());
+            }
+            // not sure what to return, and the documentation doesn't say either.
+            // https://github.com/CLIUtils/CLI11/issues/144
+            return string("");
+        });
 
         app.add_option("--api-port", m_api_port, "", true)->check(CLI::Range(-65535, 65535));
 
@@ -349,18 +337,14 @@ public:
         app.add_option("--cuda-grid-size,--cu-grid-size", m_CUSettings.gridSize, "", true)
             ->check(CLI::Range(32, 131072));
 
-        app.add_set("--cuda-block-size,--cu-block-size", m_CUSettings.blockSize,
-            {32, 64, 128, 256, 512}, "", true);
+        app.add_set("--cuda-block-size,--cu-block-size", m_CUSettings.blockSize, {32, 64, 128, 256, 512}, "", true);
 
-        app.add_set("--cuda-parallel-hash,--cu-parallel-hash", m_CUSettings.parallelHash,
-            {1, 2, 4, 8}, "", true);
+        app.add_set("--cuda-parallel-hash,--cu-parallel-hash", m_CUSettings.parallelHash, {1, 2, 4, 8}, "", true);
 
         string sched = "sync";
-        app.add_set(
-            "--cuda-schedule,--cu-schedule", sched, {"auto", "spin", "yield", "sync"}, "", true);
+        app.add_set("--cuda-schedule,--cu-schedule", sched, {"auto", "spin", "yield", "sync"}, "", true);
 
-        app.add_option("--cuda-streams,--cu-streams", m_CUSettings.streams, "", true)
-            ->check(CLI::Range(1, 32));
+        app.add_option("--cuda-streams,--cu-streams", m_CUSettings.streams, "", true)->check(CLI::Range(1, 32));
 
 #endif
 
@@ -372,8 +356,7 @@ public:
 
         app.add_flag("--noeval", m_FarmSettings.noEval, "");
 
-        app.add_option("-L,--dag-load-mode", m_FarmSettings.dagLoadMode, "", true)
-            ->check(CLI::Range(1));
+        app.add_option("-L,--dag-load-mode", m_FarmSettings.dagLoadMode, "", true)->check(CLI::Range(1));
 
         bool cl_miner = false;
         app.add_flag("-G,--opencl", cl_miner, "");
@@ -387,14 +370,11 @@ public:
 #endif
 
 
-        auto sim_opt = app.add_option(
-            "-Z,--simulation,-M,--benchmark", m_PoolSettings.benchmarkBlock, "", true);
-        app.add_option("--diff", m_PoolSettings.benchmarkDiff, "", true)
-            ->check(CLI::Range(0.00001, 100.0));
+        auto sim_opt = app.add_option("-Z,--simulation,-M,--benchmark", m_PoolSettings.benchmarkBlock, "", true);
+        app.add_option("--diff", m_PoolSettings.benchmarkDiff, "", true)->check(CLI::Range(0.00001, 100.0));
         app.add_flag("--vardiff", m_PoolSettings.benchmarkVarDiff);
 
-        app.add_option("--min-diff", m_PoolSettings.minDiff, "", true)
-            ->check(CLI::Range(0.00001, 100.0));
+        app.add_option("--min-diff", m_PoolSettings.minDiff, "", true)->check(CLI::Range(0.00001, 100.0));
 
         app.add_option("--tstop", m_FarmSettings.tempStop, "", true)->check(CLI::Range(30, 100));
         app.add_option("--tstart", m_FarmSettings.tempStart, "", true)->check(CLI::Range(30, 100));
@@ -425,8 +405,7 @@ public:
         if (g_logOptions & LOG_SWITCH)
             warnings.push("Job switch timings won't be logged. Compile with -DDEVBUILD=ON");
         if (g_logOptions & LOG_SUBMIT)
-            warnings.push(
-                "Solution internal submission timings won't be logged. Compile with -DDEVBUILD=ON");
+            warnings.push("Solution internal submission timings won't be logged. Compile with -DDEVBUILD=ON");
         if (g_logOptions & LOG_PROGRAMFLOW)
             warnings.push("Program flow won't be logged. Compile with -DDEVBUILD=ON");
         if (g_logOptions & LOG_COMPILE)
@@ -458,8 +437,7 @@ public:
         {
             m_mode = OperationMode::Simulation;
             pools.clear();
-            m_PoolSettings.connections.push_back(
-                std::shared_ptr<URI>(new URI("simulation://localhost:0", true)));
+            m_PoolSettings.connections.push_back(std::shared_ptr<URI>(new URI("simulation://localhost:0", true)));
         }
         else
         {
@@ -469,8 +447,7 @@ public:
         if (!m_shouldListDevices && !m_shouldListClPlatforms && m_mode != OperationMode::Simulation)
         {
             if (!pools.size())
-                throw std::invalid_argument(
-                    "At least one pool definition required. See -P argument.");
+                throw std::invalid_argument("At least one pool definition required. See -P argument.");
 
             for (size_t i = 0; i < pools.size(); i++)
             {
@@ -487,11 +464,10 @@ public:
                 try
                 {
                     std::shared_ptr<URI> uri = std::shared_ptr<URI>(new URI(url));
-                    if (uri->SecLevel() != dev::SecureLevel::NONE &&
-                        uri->HostNameType() != dev::UriHostNameType::Dns && !getenv("SSL_NOVERIFY"))
+                    if (uri->SecLevel() != dev::SecureLevel::NONE && uri->HostNameType() != dev::UriHostNameType::Dns &&
+                        !getenv("SSL_NOVERIFY"))
                     {
-                        warnings.push(
-                            "You have specified host " + uri->Host() + " with encryption enabled.");
+                        warnings.push("You have specified host " + uri->Host() + " with encryption enabled.");
                         warnings.push("Certificate validation will likely fail");
                     }
                     m_PoolSettings.connections.push_back(uri);
@@ -669,13 +645,13 @@ public:
                 if (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed)
                     cout << setw(5) << (it->second.clDetected ? "Yes" : "");
 #endif
-                cout << resetiosflags(ios::left) << setw(13)
-                     << getFormattedMemory((double)it->second.totalMemory) << " ";
+                cout << resetiosflags(ios::left) << setw(13) << getFormattedMemory((double)it->second.totalMemory)
+                     << " ";
 #if _OPENCL
                 if (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed)
                 {
-                    cout << resetiosflags(ios::left) << setw(13)
-                         << getFormattedMemory((double)it->second.clMaxMemAlloc) << " ";
+                    cout << resetiosflags(ios::left) << setw(13) << getFormattedMemory((double)it->second.clMaxMemAlloc)
+                         << " ";
                     cout << resetiosflags(ios::left) << setw(13)
                          << getFormattedMemory((double)it->second.clMaxWorkGroup) << " ";
                 }
@@ -692,8 +668,7 @@ public:
 
         // Apply discrete subscriptions (if any)
 #if _CUDA
-        if (m_CUSettings.devices.size() &&
-            (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed))
+        if (m_CUSettings.devices.size() && (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed))
         {
             for (auto index : m_CUSettings.devices)
             {
@@ -709,8 +684,7 @@ public:
         }
 #endif
 #if _OPENCL
-        if (m_CLSettings.devices.size() &&
-            (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed))
+        if (m_CLSettings.devices.size() && (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed))
         {
             for (auto index : m_CLSettings.devices)
             {
@@ -721,8 +695,7 @@ public:
                     if (!it->second.clDetected)
                         throw std::runtime_error("Can't OpenCL subscribe a non-OpenCL device.");
                     if (it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
-                        throw std::runtime_error(
-                            "Can't OpenCL subscribe a CUDA subscribed device.");
+                        throw std::runtime_error("Can't OpenCL subscribe a CUDA subscribed device.");
                     it->second.subscriptionType = DeviceSubscriptionTypeEnum::OpenCL;
                 }
             }
@@ -746,26 +719,22 @@ public:
 
         // Subscribe all detected devices
 #if _CUDA
-        if (!m_CUSettings.devices.size() &&
-            (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed))
+        if (!m_CUSettings.devices.size() && (m_minerType == MinerType::CUDA || m_minerType == MinerType::Mixed))
         {
             for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
             {
-                if (!it->second.cuDetected ||
-                    it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
+                if (!it->second.cuDetected || it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
                     continue;
                 it->second.subscriptionType = DeviceSubscriptionTypeEnum::Cuda;
             }
         }
 #endif
 #if _OPENCL
-        if (!m_CLSettings.devices.size() &&
-            (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed))
+        if (!m_CLSettings.devices.size() && (m_minerType == MinerType::CL || m_minerType == MinerType::Mixed))
         {
             for (auto it = m_DevicesCollection.begin(); it != m_DevicesCollection.end(); it++)
             {
-                if (!it->second.clDetected ||
-                    it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
+                if (!it->second.clDetected || it->second.subscriptionType != DeviceSubscriptionTypeEnum::None)
                     continue;
                 it->second.subscriptionType = DeviceSubscriptionTypeEnum::OpenCL;
             }
@@ -1252,8 +1221,8 @@ private:
 
         // Initialize display timer as sleeper with proper interval
         m_cliDisplayTimer.expires_from_now(boost::posix_time::seconds(m_cliDisplayInterval));
-        m_cliDisplayTimer.async_wait(m_io_strand.wrap(boost::bind(
-            &MinerCLI::cliDisplayInterval_elapsed, this, boost::asio::placeholders::error)));
+        m_cliDisplayTimer.async_wait(m_io_strand.wrap(
+            boost::bind(&MinerCLI::cliDisplayInterval_elapsed, this, boost::asio::placeholders::error)));
 
         // Stay in non-busy wait till signals arrive
         unique_lock<mutex> clilock(m_climtx);
@@ -1300,8 +1269,7 @@ private:
     //// -- Pool manager related params
 
     // -- CLI Interface related params
-    unsigned m_cliDisplayInterval =
-        5;  // Display stats/info on cli interface every this number of seconds
+    unsigned m_cliDisplayInterval = 5;  // Display stats/info on cli interface every this number of seconds
 
     // -- CLI Flow control
     mutex m_climtx;
@@ -1420,9 +1388,7 @@ int main(int argc, char** argv)
     }
     catch (const std::exception& ex)
     {
-        cerr << "Could not initialize CLI interface " << endl
-             << "Error: " << ex.what() << endl
-             << endl;
+        cerr << "Could not initialize CLI interface " << endl << "Error: " << ex.what() << endl << endl;
         return 4;
     }
 }

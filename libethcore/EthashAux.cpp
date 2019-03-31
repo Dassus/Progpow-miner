@@ -20,8 +20,8 @@
 using namespace dev;
 using namespace eth;
 
-bool EthashAux::verify(int epoch, h256 const& _headerHash, h256 const& _mixHash, uint64_t _nonce,
-    h256 const& _target) noexcept
+bool EthashAux::verify(
+    int epoch, h256 const& _headerHash, h256 const& _mixHash, uint64_t _nonce, h256 const& _target) noexcept
 {
     auto& context = ethash::get_global_epoch_context(epoch);
     auto header = ethash::hash256_from_bytes(_headerHash.data());
@@ -30,8 +30,8 @@ bool EthashAux::verify(int epoch, h256 const& _headerHash, h256 const& _mixHash,
     return ethash::verify(context, header, mix, _nonce, target);
 }
 
-bool ProgPoWAux::verify(int epoch, int block, h256 const& _headerHash, h256 const& _mixHash,
-    uint64_t _nonce, h256 const& _target) noexcept
+bool ProgPoWAux::verify(
+    int epoch, int block, h256 const& _headerHash, h256 const& _mixHash, uint64_t _nonce, h256 const& _target) noexcept
 {
     auto& context = progpow::get_global_epoch_context(epoch);
     auto header = progpow::hash256_from_bytes(_headerHash.data());
@@ -48,5 +48,4 @@ h256 dev::eth::ProgPoWAux::hash(int epoch, int block, h256 const& _headerHash, u
     auto r = progpow::hash(context, block, header, _nonce);
     h256 res{reinterpret_cast<byte*>(r.final_hash.bytes), h256::ConstructFromPointer};
     return res;
-
 }

@@ -193,8 +193,7 @@ static const char* strClError(cl_int err)
 static std::string ethCLErrorHelper(const char* msg, cl::Error const& clerr)
 {
     std::ostringstream osstream;
-    osstream << msg << ": " << clerr.what() << ": " << strClError(clerr.err()) << " ("
-             << clerr.err() << ")";
+    osstream << msg << ": " << clerr.what() << ": " << strClError(clerr.err()) << " (" << clerr.err() << ")";
     return osstream.str();
 }
 
@@ -226,15 +225,13 @@ std::vector<cl::Platform> getPlatforms()
     return platforms;
 }
 
-std::vector<cl::Device> getDevices(
-    std::vector<cl::Platform> const& _platforms, unsigned _platformId)
+std::vector<cl::Device> getDevices(std::vector<cl::Platform> const& _platforms, unsigned _platformId)
 {
     vector<cl::Device> devices;
     size_t platform_num = min<size_t>(_platformId, _platforms.size() - 1);
     try
     {
-        _platforms[platform_num].getDevices(
-            CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR, &devices);
+        _platforms[platform_num].getDevices(CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR, &devices);
     }
     catch (cl::Error const& err)
     {
@@ -292,8 +289,8 @@ bool CLMiner::loadProgPoWKernel(uint32_t _seed)
         {
             if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Nvidia)
             {
-                if (item.platform == ClPlatformTypeEnum::Nvidia &&
-                    item.compute == m_deviceDescriptor.clNvCompute && item.period == _seed)
+                if (item.platform == ClPlatformTypeEnum::Nvidia && item.compute == m_deviceDescriptor.clNvCompute &&
+                    item.period == _seed)
                 {
                     _bin = item.bin;
                     _bin_sz = item.bin_sz;
@@ -303,8 +300,8 @@ bool CLMiner::loadProgPoWKernel(uint32_t _seed)
             }
             else
             {
-                if (item.platform == m_deviceDescriptor.clPlatformType &&
-                    item.name == m_deviceDescriptor.name && item.period == _seed)
+                if (item.platform == m_deviceDescriptor.clPlatformType && item.name == m_deviceDescriptor.name &&
+                    item.period == _seed)
                 {
                     _bin = item.bin;
                     _bin_sz = item.bin_sz;
@@ -370,14 +367,14 @@ void CLMiner::compileProgPoWKernel(uint32_t _seed, uint32_t _dagelms)
             // For NVIDIA OpenCL
             if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Nvidia)
             {
-                if (item.platform == ClPlatformTypeEnum::Nvidia &&
-                    item.compute == m_deviceDescriptor.clNvCompute && item.period == _seed)
+                if (item.platform == ClPlatformTypeEnum::Nvidia && item.compute == m_deviceDescriptor.clNvCompute &&
+                    item.period == _seed)
                     return;
             }
             else
             {
-                if (item.platform == m_deviceDescriptor.clPlatformType &&
-                    item.name == m_deviceDescriptor.name && item.period == _seed)
+                if (item.platform == m_deviceDescriptor.clPlatformType && item.name == m_deviceDescriptor.name &&
+                    item.period == _seed)
                     return;
             }
         }
@@ -403,8 +400,7 @@ void CLMiner::compileProgPoWKernel(uint32_t _seed, uint32_t _dagelms)
     {
     case ClPlatformTypeEnum::Nvidia:
         addDefinition(source, "PLATFORM", 1);
-        computeCapability =
-            (m_deviceDescriptor.clNvComputeMajor * 10) + m_deviceDescriptor.clNvComputeMinor;
+        computeCapability = (m_deviceDescriptor.clNvComputeMajor * 10) + m_deviceDescriptor.clNvComputeMinor;
         maxRegs = computeCapability > 35 ? 72 : 63;
         sprintf(options, "-cl-nv-maxrregcount=%d", maxRegs);
         break;
@@ -465,8 +461,7 @@ void CLMiner::compileProgPoWKernel(uint32_t _seed, uint32_t _dagelms)
         if (g_logOptions & LOG_COMPILE)
         {
             std::string buildlog = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device);
-            cllog << "OpenCL ProgPoW kernel build error : " << buildErr.err() << " "
-                  << buildErr.what() << "\r\n"
+            cllog << "OpenCL ProgPoW kernel build error : " << buildErr.err() << " " << buildErr.what() << "\r\n"
                   << buildlog;
         }
 #else
@@ -492,8 +487,7 @@ void CLMiner::compileProgPoWKernel(uint32_t _seed, uint32_t _dagelms)
         // Save generated source for debug purpouses
         std::string fileName, tmpDir;
         if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Nvidia)
-            fileName =
-                "kernel-" + m_deviceDescriptor.clNvCompute + "-" + to_string(_seed) + ".cl.ptx";
+            fileName = "kernel-" + m_deviceDescriptor.clNvCompute + "-" + to_string(_seed) + ".cl.ptx";
         else
             fileName = "kernel-" + m_deviceDescriptor.name + "-" + to_string(_seed) + ".cl.bin";
 
@@ -526,15 +520,13 @@ void CLMiner::compileProgPoWKernel(uint32_t _seed, uint32_t _dagelms)
 #ifdef _DEVELOPER
     if (g_logOptions & LOG_COMPILE)
         cllog << "Done compiling in "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(
-                     std::chrono::steady_clock::now() - startCompile)
+              << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startCompile)
                      .count()
               << " ms. ";
 #endif
 }
 
-void CLMiner::enumDevices(
-    std::map<string, DeviceDescriptor>& _DevicesCollection, std::vector<unsigned>& _platforms)
+void CLMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollection, std::vector<unsigned>& _platforms)
 {
     // Load available platforms
     vector<cl::Platform> platforms = getPlatforms();
@@ -591,20 +583,17 @@ void CLMiner::enumDevices(
             if (clDeviceType == DeviceTypeEnum::Gpu && platformType == ClPlatformTypeEnum::Nvidia)
             {
                 cl_int bus_id, slot_id;
-                if (clGetDeviceInfo(device.get(), 0x4008, sizeof(bus_id), &bus_id, NULL) ==
-                        CL_SUCCESS &&
-                    clGetDeviceInfo(device.get(), 0x4009, sizeof(slot_id), &slot_id, NULL) ==
-                        CL_SUCCESS)
+                if (clGetDeviceInfo(device.get(), 0x4008, sizeof(bus_id), &bus_id, NULL) == CL_SUCCESS &&
+                    clGetDeviceInfo(device.get(), 0x4009, sizeof(slot_id), &slot_id, NULL) == CL_SUCCESS)
                 {
                     std::ostringstream s;
-                    s << setfill('0') << setw(2) << hex << bus_id << ":" << setw(2)
-                      << (unsigned int)(slot_id >> 3) << "." << (unsigned int)(slot_id & 0x7);
+                    s << setfill('0') << setw(2) << hex << bus_id << ":" << setw(2) << (unsigned int)(slot_id >> 3)
+                      << "." << (unsigned int)(slot_id & 0x7);
                     uniqueId = s.str();
                 }
             }
             else if (clDeviceType == DeviceTypeEnum::Gpu &&
-                     (platformType == ClPlatformTypeEnum::Amd ||
-                         platformType == ClPlatformTypeEnum::Clover))
+                     (platformType == ClPlatformTypeEnum::Amd || platformType == ClPlatformTypeEnum::Clover))
             {
                 cl_char t[24];
                 if (clGetDeviceInfo(device.get(), 0x4037, sizeof(t), &t, NULL) == CL_SUCCESS)
@@ -648,10 +637,8 @@ void CLMiner::enumDevices(
 
             deviceDescriptor.clName = deviceDescriptor.name;
             deviceDescriptor.clDeviceVersion = device.getInfo<CL_DEVICE_VERSION>();
-            deviceDescriptor.clDeviceVersionMajor =
-                std::stoi(deviceDescriptor.clDeviceVersion.substr(7, 1));
-            deviceDescriptor.clDeviceVersionMinor =
-                std::stoi(deviceDescriptor.clDeviceVersion.substr(9, 1));
+            deviceDescriptor.clDeviceVersionMajor = std::stoi(deviceDescriptor.clDeviceVersion.substr(7, 1));
+            deviceDescriptor.clDeviceVersionMinor = std::stoi(deviceDescriptor.clDeviceVersion.substr(9, 1));
             deviceDescriptor.clDeviceExtensions = device.getInfo<CL_DEVICE_EXTENSIONS>();
             deviceDescriptor.totalMemory = device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>();
             deviceDescriptor.clMaxMemAlloc = device.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
@@ -668,13 +655,11 @@ void CLMiner::enumDevices(
             {
                 size_t siz;
                 clGetDeviceInfo(device.get(), CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV,
-                    sizeof(deviceDescriptor.clNvComputeMajor), &deviceDescriptor.clNvComputeMajor,
-                    &siz);
+                    sizeof(deviceDescriptor.clNvComputeMajor), &deviceDescriptor.clNvComputeMajor, &siz);
                 clGetDeviceInfo(device.get(), CL_DEVICE_COMPUTE_CAPABILITY_MINOR_NV,
-                    sizeof(deviceDescriptor.clNvComputeMinor), &deviceDescriptor.clNvComputeMinor,
-                    &siz);
-                deviceDescriptor.clNvCompute = to_string(deviceDescriptor.clNvComputeMajor) + "." +
-                                               to_string(deviceDescriptor.clNvComputeMinor);
+                    sizeof(deviceDescriptor.clNvComputeMinor), &deviceDescriptor.clNvComputeMinor, &siz);
+                deviceDescriptor.clNvCompute =
+                    to_string(deviceDescriptor.clNvComputeMajor) + "." + to_string(deviceDescriptor.clNvComputeMinor);
             }
 
             // Upsert Devices Collection
@@ -699,8 +684,8 @@ void CLMiner::enumPlatforms()
         std::string platformVendor = platforms.at(pIdx).getInfo<CL_PLATFORM_VENDOR>();
         std::string platformVersion = platforms.at(pIdx).getInfo<CL_PLATFORM_VERSION>();
 
-        std::cout << " " << pIdx << " " << platformName << " (" << platformVendor << ") "
-                  << platformVersion << std::endl;
+        std::cout << " " << pIdx << " " << platformName << " (" << platformVendor << ") " << platformVersion
+                  << std::endl;
     }
 }
 
@@ -764,14 +749,12 @@ bool CLMiner::initDevice()
     }
 
     if (m_deviceDescriptor.clPlatformVersionMajor == 1 &&
-        (m_deviceDescriptor.clPlatformVersionMinor == 0 ||
-            m_deviceDescriptor.clPlatformVersionMinor == 1))
+        (m_deviceDescriptor.clPlatformVersionMinor == 0 || m_deviceDescriptor.clPlatformVersionMinor == 1))
     {
         if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Clover)
         {
-            cllog
-                << "OpenCL " << m_deviceDescriptor.clPlatformVersion
-                << " not supported, but platform Clover might work nevertheless. USE AT OWN RISK!";
+            cllog << "OpenCL " << m_deviceDescriptor.clPlatformVersion
+                  << " not supported, but platform Clover might work nevertheless. USE AT OWN RISK!";
         }
         else
         {
@@ -789,8 +772,7 @@ bool CLMiner::initDevice()
         s << " " << m_deviceDescriptor.clDeviceVersion;
 
     s << " Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory)
-      << " Group size : " << m_settings.globalWorkSizeMultiplier
-      << " Work size : " << m_settings.localWorkSize;
+      << " Group size : " << m_settings.globalWorkSizeMultiplier << " Work size : " << m_settings.localWorkSize;
 
     cllog << s.str();
 
@@ -803,8 +785,7 @@ bool CLMiner::initDevice()
     // Nvidia
     if (!m_deviceDescriptor.clNvCompute.empty())
     {
-        computeCapability =
-            m_deviceDescriptor.clNvComputeMajor * 10 + m_deviceDescriptor.clNvComputeMinor;
+        computeCapability = m_deviceDescriptor.clNvComputeMajor * 10 + m_deviceDescriptor.clNvComputeMinor;
         int maxregs = computeCapability >= 35 ? 72 : 63;
         sprintf(options, "-cl-nv-maxrregcount=%d", maxregs);
     }
@@ -841,8 +822,7 @@ bool CLMiner::initDevice()
         if (g_logOptions & LOG_COMPILE)
         {
             std::string buildlog = ethash_program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_device);
-            cllog << "OpenCL Ethash kernel build error : " << buildErr.err() << " "
-                  << buildErr.what() << "\r\n"
+            cllog << "OpenCL Ethash kernel build error : " << buildErr.err() << " " << buildErr.what() << "\r\n"
                   << buildlog;
         }
 #else
@@ -851,7 +831,7 @@ bool CLMiner::initDevice()
         throw std::runtime_error("Unable to build Ethash Kernel");
     }
 
- #if _BINKERN
+#if _BINKERN
     /* If we have a binary kernel, we load it in tandem with the opencl,
        that way, we can use the dag generate opencl code and fall back on
        the default kernel if loading fails for whatever reason */
@@ -864,8 +844,8 @@ bool CLMiner::initDevice()
         /* Open kernels/ethash_{devicename}_lws{local_work_size}.bin */
         std::string device_name = m_deviceDescriptor.clName;
         std::transform(device_name.begin(), device_name.end(), device_name.begin(), ::tolower);
-        fname_strm << boost::dll::program_location().parent_path().string() << "/kernels/ethash_"
-                   << device_name << "_lws" << m_settings.localWorkSize << ".bin";
+        fname_strm << boost::dll::program_location().parent_path().string() << "/kernels/ethash_" << device_name
+                   << "_lws" << m_settings.localWorkSize << ".bin";
         cllog << "Loading binary kernel " << fname_strm.str();
 
         try
@@ -887,7 +867,6 @@ bool CLMiner::initDevice()
             m_ethash_search_kernel = cl::Kernel(program, "ethash_search");
             m_ethash_search_kernel.setArg(0, m_searchBuffer);
             m_deviceDescriptor.clBinaryKernel = true;
-
         }
         catch (std::exception const& _ex)
         {
@@ -914,8 +893,7 @@ bool CLMiner::initEpoch_internal()
     {
         cllog << "Epoch " << m_epochContext.epochNumber << " requires "
               << dev::getFormattedMemory((double)RequiredMemory) << " memory. Only "
-              << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory)
-              << " available on device.";
+              << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory) << " available on device.";
         pause(MinerPauseEnum::PauseDueToInsufficientMemory);
         return true;  // This will prevent to exit the thread and
                       // Eventually resume mining when changing coin or epoch (NiceHash)
@@ -930,8 +908,7 @@ bool CLMiner::initEpoch_internal()
         {
             m_light = cl::Buffer(m_context, CL_MEM_READ_ONLY, m_epochContext.lightSize);
             m_dag = cl::Buffer(m_context, CL_MEM_READ_ONLY, m_epochContext.dagSize);
-            m_queue.enqueueWriteBuffer(
-                m_light, CL_TRUE, 0, m_epochContext.lightSize, m_epochContext.lightCache);
+            m_queue.enqueueWriteBuffer(m_light, CL_TRUE, 0, m_epochContext.lightSize, m_epochContext.lightCache);
         }
         catch (cl::Error const& err)
         {
@@ -946,15 +923,13 @@ bool CLMiner::initEpoch_internal()
         m_ethash_dag_kernel.setArg(3, (uint32_t)(m_epochContext.lightSize / 64));
         m_ethash_dag_kernel.setArg(4, ~0u);
 
-        const uint32_t workItems =
-            m_epochContext.dagNumItems * 2;  // GPU computes partial 512-bit DAG items.
+        const uint32_t workItems = m_epochContext.dagNumItems * 2;  // GPU computes partial 512-bit DAG items.
         uint32_t start;
         const uint32_t chunk = 10240 * m_settings.localWorkSize;
         for (start = 0; start <= workItems - chunk; start += chunk)
         {
             m_ethash_dag_kernel.setArg(0, start);
-            m_queue.enqueueNDRangeKernel(
-                m_ethash_dag_kernel, cl::NullRange, chunk, m_settings.localWorkSize);
+            m_queue.enqueueNDRangeKernel(m_ethash_dag_kernel, cl::NullRange, chunk, m_settings.localWorkSize);
             m_queue.finish();
         }
         if (start < workItems)
@@ -962,8 +937,8 @@ bool CLMiner::initEpoch_internal()
             uint32_t groupsLeft = workItems - start;
             groupsLeft = (groupsLeft + m_settings.localWorkSize - 1) / m_settings.localWorkSize;
             m_ethash_dag_kernel.setArg(0, start);
-            m_queue.enqueueNDRangeKernel(m_ethash_dag_kernel, cl::NullRange,
-                groupsLeft * m_settings.localWorkSize, m_settings.localWorkSize);
+            m_queue.enqueueNDRangeKernel(
+                m_ethash_dag_kernel, cl::NullRange, groupsLeft * m_settings.localWorkSize, m_settings.localWorkSize);
             m_queue.finish();
         }
 
@@ -973,11 +948,9 @@ bool CLMiner::initEpoch_internal()
         m_ethash_search_kernel.setArg(6, 0xffffffff);
 
         cllog << "Generated DAG + Light in "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(
-                     std::chrono::steady_clock::now() - startInit)
+              << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startInit)
                      .count()
-              << " ms. "
-              << dev::getFormattedMemory((double)(m_deviceDescriptor.totalMemory - RequiredMemory))
+              << " ms. " << dev::getFormattedMemory((double)(m_deviceDescriptor.totalMemory - RequiredMemory))
               << " left.";
     }
     catch (cl::Error const& err)
@@ -998,8 +971,7 @@ void CLMiner::ethash_search()
     m_workSearchDuration = 0;
     m_workHashes = 0;
 
-    m_queue.enqueueWriteBuffer(
-        m_header, CL_FALSE, 0, m_work_active.header.size, m_work_active.header.data());
+    m_queue.enqueueWriteBuffer(m_header, CL_FALSE, 0, m_work_active.header.size, m_work_active.header.data());
     m_ethash_search_kernel.setArg(1, m_header);
 
     uint64_t startNonce, target;
@@ -1012,8 +984,7 @@ void CLMiner::ethash_search()
     if (target != m_current_target)
     {
         m_current_target = target;
-        m_queue.enqueueWriteBuffer(
-            m_target, CL_FALSE, 0, sizeof(m_current_target), &m_current_target);
+        m_queue.enqueueWriteBuffer(m_target, CL_FALSE, 0, sizeof(m_current_target), &m_current_target);
         m_ethash_search_kernel.setArg(5, m_target);
     }
 
@@ -1043,8 +1014,7 @@ void CLMiner::ethash_search()
                 // amount of time.
                 // https://github.com/mbevand/silentarmy/commit/a6c3517fc189a934edfa89549664f95b51b965d8
 
-                m_queue.enqueueReadBuffer(
-                    m_searchBuffer, CL_FALSE, 0, sizeof(search_results), (void*)&results);
+                m_queue.enqueueReadBuffer(m_searchBuffer, CL_FALSE, 0, sizeof(search_results), (void*)&results);
 
                 // We actually measure the amount of time needed for the previous kernel to
                 // complete up to moment it gave results back. On first loop after initialization
@@ -1056,28 +1026,25 @@ void CLMiner::ethash_search()
                     this_thread::sleep_for(std::chrono::microseconds(duration));
                 }
                 m_queue.finish();
-                long elapsed = (long)std::chrono::duration_cast<std::chrono::microseconds>(
-                    clock::now() - start)
-                                   .count();
+                long elapsed =
+                    (long)std::chrono::duration_cast<std::chrono::microseconds>(clock::now() - start).count();
 #if _DEVELOPER
                 if (g_logOptions & LOG_KERNEL_TIMES)
                 {
                     cllog << "Kernel search time : " << elapsed << " us.";
                 }
 #endif
-                m_ethash_search_kernel_time = long(m_ethash_search_kernel_time * KERNEL_EMA_ALPHA +
-                                                   (1.0 - KERNEL_EMA_ALPHA) * elapsed);
+                m_ethash_search_kernel_time =
+                    long(m_ethash_search_kernel_time * KERNEL_EMA_ALPHA + (1.0 - KERNEL_EMA_ALPHA) * elapsed);
             }
             else
             {
-                m_queue.enqueueReadBuffer(
-                    m_searchBuffer, CL_TRUE, 0, sizeof(search_results), (void*)&results);
+                m_queue.enqueueReadBuffer(m_searchBuffer, CL_TRUE, 0, sizeof(search_results), (void*)&results);
 #if _DEVELOPER
                 if (g_logOptions & LOG_KERNEL_TIMES)
                 {
-                    long elapsed = (long)std::chrono::duration_cast<std::chrono::microseconds>(
-                        clock::now() - start)
-                                       .count();
+                    long elapsed =
+                        (long)std::chrono::duration_cast<std::chrono::microseconds>(clock::now() - start).count();
                     cllog << "Kernel search time : " << elapsed << " us.";
                 }
 #endif
@@ -1087,8 +1054,7 @@ void CLMiner::ethash_search()
             m_activeKernel.store(false, memory_order_relaxed);
 
             // Accumulate hashrate data
-            m_workSearchDuration =
-                duration_cast<microseconds>(steady_clock::now() - m_workSearchStart).count();
+            m_workSearchDuration = duration_cast<microseconds>(steady_clock::now() - m_workSearchStart).count();
             m_workHashes += (m_settings.localWorkSize * results.rounds);
 
             startNonce += m_settings.globalWorkSize;
@@ -1097,15 +1063,15 @@ void CLMiner::ethash_search()
         if (!m_new_work.load(memory_order_relaxed))
         {
             // Zero the results count (in device)
-            m_queue.enqueueWriteBuffer(m_searchBuffer, CL_FALSE, offsetof(search_results, count),
-                sizeof(m_zerox3), (void*)&m_zerox3);
+            m_queue.enqueueWriteBuffer(
+                m_searchBuffer, CL_FALSE, offsetof(search_results, count), sizeof(m_zerox3), (void*)&m_zerox3);
 
             // run the kernel
             m_activeKernel.store(true, memory_order_relaxed);
             m_ethash_search_kernel.setArg(4, startNonce);
             start = clock::now();
-            m_queue.enqueueNDRangeKernel(m_ethash_search_kernel, cl::NullRange,
-                m_settings.globalWorkSize, m_settings.localWorkSize);
+            m_queue.enqueueNDRangeKernel(
+                m_ethash_search_kernel, cl::NullRange, m_settings.globalWorkSize, m_settings.localWorkSize);
         }
 
         // Submit solutions while kernel is running (if any)
@@ -1115,8 +1081,8 @@ void CLMiner::ethash_search()
             {
                 h256 mix;
                 memcpy(mix.data(), (void*)results.result[i].mix, sizeof(results.result[i].mix));
-                auto sol = Solution{results.result[i].nonce, mix, m_work_active,
-                    std::chrono::steady_clock::now(), m_index};
+                auto sol =
+                    Solution{results.result[i].nonce, mix, m_work_active, std::chrono::steady_clock::now(), m_index};
 
                 cllog << EthWhite << "Job: " << m_work_active.header.abridged()
                       << " Sol: " << toHex(sol.nonce, HexPrefix::Add) << EthReset;
@@ -1147,8 +1113,7 @@ void CLMiner::progpow_search()
     m_workSearchDuration = 0;
     m_workHashes = 0;
 
-    m_queue.enqueueWriteBuffer(
-        m_header, CL_FALSE, 0, m_work_active.header.size, m_work_active.header.data());
+    m_queue.enqueueWriteBuffer(m_header, CL_FALSE, 0, m_work_active.header.size, m_work_active.header.data());
     m_progpow_search_kernel.setArg(1, m_header);
 
 
@@ -1162,8 +1127,7 @@ void CLMiner::progpow_search()
     if (target != m_current_target)
     {
         m_current_target = target;
-        m_queue.enqueueWriteBuffer(
-            m_target, CL_FALSE, 0, sizeof(m_current_target), &m_current_target);
+        m_queue.enqueueWriteBuffer(m_target, CL_FALSE, 0, sizeof(m_current_target), &m_current_target);
         m_progpow_search_kernel.setArg(4, m_target);
     }
 
@@ -1195,8 +1159,7 @@ void CLMiner::progpow_search()
                 // amount of time.
                 // https://github.com/mbevand/silentarmy/commit/a6c3517fc189a934edfa89549664f95b51b965d8
 
-                m_queue.enqueueReadBuffer(
-                    m_searchBuffer, CL_FALSE, 0, sizeof(search_results), (void*)&results);
+                m_queue.enqueueReadBuffer(m_searchBuffer, CL_FALSE, 0, sizeof(search_results), (void*)&results);
 
                 // We actually measure the amount of time needed for the previous kernel to
                 // complete up to moment it gave results back. On first loop after initialization
@@ -1208,12 +1171,10 @@ void CLMiner::progpow_search()
                     this_thread::sleep_for(std::chrono::microseconds(duration));
                 }
                 m_queue.finish();
-                long elapsed = (long)std::chrono::duration_cast<std::chrono::microseconds>(
-                    clock::now() - start)
-                                   .count();
+                long elapsed =
+                    (long)std::chrono::duration_cast<std::chrono::microseconds>(clock::now() - start).count();
                 m_progpow_search_kernel_time =
-                    long(m_progpow_search_kernel_time * KERNEL_EMA_ALPHA +
-                         (1.0 - KERNEL_EMA_ALPHA) * elapsed);
+                    long(m_progpow_search_kernel_time * KERNEL_EMA_ALPHA + (1.0 - KERNEL_EMA_ALPHA) * elapsed);
 #if _DEVELOPER
                 if (g_logOptions & LOG_KERNEL_TIMES)
                 {
@@ -1223,14 +1184,12 @@ void CLMiner::progpow_search()
             }
             else
             {
-                m_queue.enqueueReadBuffer(
-                    m_searchBuffer, CL_TRUE, 0, sizeof(search_results), (void*)&results);
+                m_queue.enqueueReadBuffer(m_searchBuffer, CL_TRUE, 0, sizeof(search_results), (void*)&results);
 #if _DEVELOPER
                 if (g_logOptions & LOG_KERNEL_TIMES)
                 {
-                    long elapsed = (long)std::chrono::duration_cast<std::chrono::microseconds>(
-                        clock::now() - start)
-                                       .count();
+                    long elapsed =
+                        (long)std::chrono::duration_cast<std::chrono::microseconds>(clock::now() - start).count();
                     cllog << "Kernel search time : " << elapsed << " us.";
                 }
 #endif
@@ -1240,8 +1199,7 @@ void CLMiner::progpow_search()
             m_activeKernel.store(false, memory_order_relaxed);
 
             // Accumulate hashrate data
-            m_workSearchDuration =
-                duration_cast<microseconds>(steady_clock::now() - m_workSearchStart).count();
+            m_workSearchDuration = duration_cast<microseconds>(steady_clock::now() - m_workSearchStart).count();
             m_workHashes += (m_settings.localWorkSize * results.rounds);
 
             startNonce += m_settings.globalWorkSize;
@@ -1250,15 +1208,15 @@ void CLMiner::progpow_search()
         if (!m_new_work.load(memory_order_relaxed))
         {
             // Zero the results count (in device)
-            m_queue.enqueueWriteBuffer(m_searchBuffer, CL_FALSE, offsetof(search_results, count),
-                sizeof(m_zerox3), (void*)&m_zerox3);
+            m_queue.enqueueWriteBuffer(
+                m_searchBuffer, CL_FALSE, offsetof(search_results, count), sizeof(m_zerox3), (void*)&m_zerox3);
 
             // run the kernel
             m_activeKernel.store(true, memory_order_relaxed);
             m_progpow_search_kernel.setArg(3, startNonce);
             start = clock::now();
-            m_queue.enqueueNDRangeKernel(m_progpow_search_kernel, cl::NullRange,
-                m_settings.globalWorkSize, m_settings.localWorkSize);
+            m_queue.enqueueNDRangeKernel(
+                m_progpow_search_kernel, cl::NullRange, m_settings.globalWorkSize, m_settings.localWorkSize);
         }
 
         // Submit solutions while kernel is running (if any)
@@ -1268,8 +1226,8 @@ void CLMiner::progpow_search()
             {
                 h256 mix;
                 memcpy(mix.data(), (void*)results.result[i].mix, sizeof(results.result[i].mix));
-                auto sol = Solution{results.result[i].nonce, mix, m_work_active,
-                    std::chrono::steady_clock::now(), m_index};
+                auto sol =
+                    Solution{results.result[i].nonce, mix, m_work_active, std::chrono::steady_clock::now(), m_index};
 
                 cllog << EthWhite << "Job: " << m_work_active.header.abridged()
                       << " Sol: " << toHex(sol.nonce, HexPrefix::Add) << EthReset;

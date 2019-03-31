@@ -36,8 +36,8 @@ namespace eth
 {
 Farm* Farm::m_this = nullptr;
 
-Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection, FarmSettings _settings,
-    CUSettings _CUSettings, CLSettings _CLSettings, CPSettings _CPSettings)
+Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection, FarmSettings _settings, CUSettings _CUSettings,
+    CLSettings _CLSettings, CPSettings _CPSettings)
   : m_Settings(std::move(_settings)),
     m_CUSettings(std::move(_CUSettings)),
     m_CLSettings(std::move(_CLSettings)),
@@ -99,9 +99,8 @@ Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection, FarmSett
             {
                 std::ostringstream oss;
                 std::string uniqueId;
-                oss << std::setfill('0') << std::setw(2) << std::hex
-                    << (unsigned int)sysfsh->sysfs_pci_bus_id[i] << ":" << std::setw(2)
-                    << (unsigned int)(sysfsh->sysfs_pci_device_id[i]) << ".0";
+                oss << std::setfill('0') << std::setw(2) << std::hex << (unsigned int)sysfsh->sysfs_pci_bus_id[i] << ":"
+                    << std::setw(2) << (unsigned int)(sysfsh->sysfs_pci_device_id[i]) << ".0";
                 uniqueId = oss.str();
                 map_amdsysfs_handle[uniqueId] = i;
             }
@@ -118,10 +117,8 @@ Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection, FarmSett
                 std::ostringstream oss;
                 std::string uniqueId;
                 oss << std::setfill('0') << std::setw(2) << std::hex
-                    << (unsigned int)adlh->devs[adlh->phys_logi_device_id[i]].iBusNumber << ":"
-                    << std::setw(2)
-                    << (unsigned int)(adlh->devs[adlh->phys_logi_device_id[i]].iDeviceNumber)
-                    << ".0";
+                    << (unsigned int)adlh->devs[adlh->phys_logi_device_id[i]].iBusNumber << ":" << std::setw(2)
+                    << (unsigned int)(adlh->devs[adlh->phys_logi_device_id[i]].iDeviceNumber) << ".0";
                 uniqueId = oss.str();
                 map_adl_handle[uniqueId] = i;
             }
@@ -137,9 +134,8 @@ Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection, FarmSett
             {
                 std::ostringstream oss;
                 std::string uniqueId;
-                oss << std::setfill('0') << std::setw(2) << std::hex
-                    << (unsigned int)nvmlh->nvml_pci_bus_id[i] << ":" << std::setw(2)
-                    << (unsigned int)(nvmlh->nvml_pci_device_id[i] >> 3) << ".0";
+                oss << std::setfill('0') << std::setw(2) << std::hex << (unsigned int)nvmlh->nvml_pci_bus_id[i] << ":"
+                    << std::setw(2) << (unsigned int)(nvmlh->nvml_pci_device_id[i] >> 3) << ".0";
                 uniqueId = oss.str();
                 map_nvml_handle[uniqueId] = i;
             }
@@ -224,7 +220,7 @@ void Farm::setWork(WorkPackage const& _newWp)
         cnote << "Mining algo " << EthWhiteBold << _newWp.algo << EthReset;
 
     // Prevent dispatch of a ProgPoW workpackage which has block number missing
-    if (_newWp.algo == "progpow" && _newWp.block < 0) 
+    if (_newWp.algo == "progpow" && _newWp.block < 0)
     {
         cwarn << EthRed "Got ProgPoW job with missing block number. Discarding ..." EthReset;
         return;
@@ -242,8 +238,7 @@ void Farm::setWork(WorkPackage const& _newWp)
     {
         // Equally divide the residual segment among miners
         _startNonce = m_currentWp.startNonce;
-        m_nonce_segment_with =
-            (unsigned int)log2(pow(2, 64 - (m_currentWp.exSizeBytes * 4)) / m_miners.size());
+        m_nonce_segment_with = (unsigned int)log2(pow(2, 64 - (m_currentWp.exSizeBytes * 4)) / m_miners.size());
     }
     else
     {
@@ -280,8 +275,7 @@ bool Farm::start()
             if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::Cuda)
             {
                 minerTelemetry.prefix = "cu";
-                m_miners.push_back(std::shared_ptr<Miner>(
-                    new CUDAMiner(m_miners.size(), m_CUSettings, it->second)));
+                m_miners.push_back(std::shared_ptr<Miner>(new CUDAMiner(m_miners.size(), m_CUSettings, it->second)));
             }
 #endif
 #if _OPENCL
@@ -289,8 +283,7 @@ bool Farm::start()
             if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::OpenCL)
             {
                 minerTelemetry.prefix = "cl";
-                m_miners.push_back(
-                    std::shared_ptr<Miner>(new CLMiner(m_miners.size(), m_CLSettings, it->second)));
+                m_miners.push_back(std::shared_ptr<Miner>(new CLMiner(m_miners.size(), m_CLSettings, it->second)));
             }
 #endif
 #if _CPU
@@ -298,8 +291,7 @@ bool Farm::start()
             if (it->second.subscriptionType == DeviceSubscriptionTypeEnum::Cpu)
             {
                 minerTelemetry.prefix = "cp";
-                m_miners.push_back(std::shared_ptr<Miner>(
-                    new CPUMiner(m_miners.size(), m_CPSettings, it->second)));
+                m_miners.push_back(std::shared_ptr<Miner>(new CPUMiner(m_miners.size(), m_CPSettings, it->second)));
             }
 #endif
             if (minerTelemetry.prefix.empty())
@@ -349,7 +341,6 @@ void Farm::stop()
                 this_thread::sleep_for(std::chrono::microseconds(100));
             }
         }
-        
     }
     DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Farm::stop() end");
 }
@@ -515,13 +506,12 @@ void Farm::submitProofAsync(Solution const& _s)
 
         if (_s.work.algo == "ethash")
         {
-            valid = EthashAux::verify(
-                _s.work.epoch, _s.work.header, _s.mixHash, _s.nonce, _s.work.boundary);
+            valid = EthashAux::verify(_s.work.epoch, _s.work.header, _s.mixHash, _s.nonce, _s.work.boundary);
         }
         else if (_s.work.algo == "progpow")
         {
-            valid = ProgPoWAux::verify(_s.work.epoch, _s.work.block, _s.work.header, _s.mixHash,
-                _s.nonce, _s.work.boundary);
+            valid = ProgPoWAux::verify(
+                _s.work.epoch, _s.work.block, _s.work.header, _s.mixHash, _s.nonce, _s.work.boundary);
         }
         else
         {
@@ -531,8 +521,7 @@ void Farm::submitProofAsync(Solution const& _s)
         if (!valid)
         {
             accountSolution(_s.midx, SolutionAccountingEnum::Failed);
-            cwarn << EthRedBold "**Failed " << EthReset << EthWhiteBold << "GPU " << _s.midx
-                  << EthReset
+            cwarn << EthRedBold "**Failed " << EthReset << EthWhiteBold << "GPU " << _s.midx << EthReset
                   << " gave incorrect result. Lower overclocking values if it happens "
                      "frequently.";
             return;
@@ -544,8 +533,7 @@ void Farm::submitProofAsync(Solution const& _s)
 #ifdef _DEVELOPER
     if (g_logOptions & LOG_SUBMIT)
         cnote << "Submit time: "
-              << std::chrono::duration_cast<std::chrono::microseconds>(
-                     std::chrono::steady_clock::now() - _s.tstamp)
+              << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - _s.tstamp)
                      .count()
               << " us.";
 #endif
@@ -610,8 +598,7 @@ void Farm::collectData(const boost::system::error_code& ec)
                     int devIdx = hwInfo.deviceIndex;
                     if (devIdx == -1 && !hwInfo.devicePciId.empty())
                     {
-                        if (map_amdsysfs_handle.find(hwInfo.devicePciId) !=
-                            map_amdsysfs_handle.end())
+                        if (map_amdsysfs_handle.find(hwInfo.devicePciId) != map_amdsysfs_handle.end())
                         {
                             devIdx = map_amdsysfs_handle[hwInfo.devicePciId];
                             miner->setHwmonDeviceIndex(devIdx);
@@ -628,12 +615,11 @@ void Farm::collectData(const boost::system::error_code& ec)
                         wrap_amdsysfs_get_tempC(sysfsh, devIdx, &tempC);
                         wrap_amdsysfs_get_fanpcnt(sysfsh, devIdx, &fanpcnt);
 
-                        if (m_Settings.hwMon == 2) 
+                        if (m_Settings.hwMon == 2)
                         {
                             wrap_amdsysfs_get_power_usage(sysfsh, devIdx, &powerW);
                             wrap_amdsysfs_get_voltage(sysfsh, devIdx, &voltage);
                         }
-
                     }
                 }
 #else
@@ -682,11 +668,9 @@ void Farm::collectData(const boost::system::error_code& ec)
             m_telemetry.miners.at(minerIdx).sensors.fanP = fanpcnt;
             m_telemetry.miners.at(minerIdx).sensors.powerW = powerW / ((double)1000.0);
             m_telemetry.miners.at(minerIdx).sensors.voltage = voltage / ((double)1000.0);
-
         }
 
         m_telemetry.farm.hashrate = farm_hr;
-
     }
 
     // Resubmit timer for another loop

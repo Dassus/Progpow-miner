@@ -66,8 +66,7 @@ wrap_amdsysfs_handle* wrap_amdsysfs_create()
     for (fs::directory_iterator dirEnt(drm_dir); dirEnt != fs::directory_iterator(); ++dirEnt)
     {
         // Skip non relevant entries
-        if (!fs::is_directory(dirEnt->path()) ||
-            !std::regex_match(dirEnt->path().filename().string(), cardPattern))
+        if (!fs::is_directory(dirEnt->path()) || !std::regex_match(dirEnt->path().filename().string(), cardPattern))
             continue;
 
         std::string devName = dirEnt->path().filename().string();
@@ -78,8 +77,8 @@ wrap_amdsysfs_handle* wrap_amdsysfs_create()
         // Get AMD cards only (vendor 4098)
         fs::path vendor_file("/sys/class/drm/" + devName + "/device/vendor");
         snprintf(dbuf, 120, "/sys/class/drm/%s/device/vendor", devName.c_str());
-        if (!fs::exists(vendor_file) || !fs::is_regular_file(vendor_file) ||
-            !getFileContentValue(dbuf, vendorId) || vendorId != 4098)
+        if (!fs::exists(vendor_file) || !fs::is_regular_file(vendor_file) || !getFileContentValue(dbuf, vendorId) ||
+            vendorId != 4098)
             continue;
 
         // Check it has dependant hwmon directory
@@ -88,8 +87,7 @@ wrap_amdsysfs_handle* wrap_amdsysfs_create()
             continue;
 
         // Loop subelements in hwmon directory
-        for (fs::directory_iterator hwmonEnt(hwmon_dir); hwmonEnt != fs::directory_iterator();
-             ++hwmonEnt)
+        for (fs::directory_iterator hwmonEnt(hwmon_dir); hwmonEnt != fs::directory_iterator(); ++hwmonEnt)
         {
             // Skip non relevant entries
             if (!fs::is_directory(hwmonEnt->path()) ||
@@ -211,8 +209,7 @@ int wrap_amdsysfs_get_tempC(wrap_amdsysfs_handle* sysfsh, int index, unsigned in
         return -1;
 
     char dbuf[120];
-    snprintf(
-        dbuf, 120, "/sys/class/drm/card%d/device/hwmon/hwmon%d/temp1_input", gpuindex, hwmonindex);
+    snprintf(dbuf, 120, "/sys/class/drm/card%d/device/hwmon/hwmon%d/temp1_input", gpuindex, hwmonindex);
 
     unsigned int temp = 0;
     if (!getFileContentValue(dbuf, temp))
@@ -238,12 +235,10 @@ int wrap_amdsysfs_get_fanpcnt(wrap_amdsysfs_handle* sysfsh, int index, unsigned 
     snprintf(dbuf, 120, "/sys/class/drm/card%d/device/hwmon/hwmon%d/pwm1", gpuindex, hwmonindex);
     if (getFileContentValue(dbuf, pwm))
     {
-        snprintf(
-            dbuf, 120, "/sys/class/drm/card%d/device/hwmon/hwmon%d/pwm1_max", gpuindex, hwmonindex);
+        snprintf(dbuf, 120, "/sys/class/drm/card%d/device/hwmon/hwmon%d/pwm1_max", gpuindex, hwmonindex);
         if (getFileContentValue(dbuf, pwmMax))
         {
-            snprintf(dbuf, 120, "/sys/class/drm/card%d/device/hwmon/hwmon%d/pwm1_min", gpuindex,
-                hwmonindex);
+            snprintf(dbuf, 120, "/sys/class/drm/card%d/device/hwmon/hwmon%d/pwm1_min", gpuindex, hwmonindex);
             if (getFileContentValue(dbuf, pwmMin))
             {
                 *fanpcnt = (unsigned int)(double(pwm - pwmMin) / double(pwmMax - pwmMin) * 100.0);
@@ -266,8 +261,7 @@ int wrap_amdsysfs_get_power_usage(wrap_amdsysfs_handle* sysfsh, int index, unsig
         return -1;
 
     char dbuf[120];
-    snprintf(dbuf, 120, "/sys/class/drm/card%u/device/hwmon/hwmon%u/power1_average", gpuindex,
-        hwmonindex);
+    snprintf(dbuf, 120, "/sys/class/drm/card%u/device/hwmon/hwmon%u/power1_average", gpuindex, hwmonindex);
 
     unsigned int pwr_avg = 0;
 
@@ -318,8 +312,7 @@ int wrap_amdsysfs_get_voltage(wrap_amdsysfs_handle* sysfsh, int index, unsigned 
         return -1;
 
     char dbuf[120];
-    snprintf(
-        dbuf, 120, "/sys/class/drm/card%u/device/hwmon/hwmon%u/in0_input", gpuindex, hwmonindex);
+    snprintf(dbuf, 120, "/sys/class/drm/card%u/device/hwmon/hwmon%u/in0_input", gpuindex, hwmonindex);
 
     unsigned int vdd = 0;
     if (!getFileContentValue(dbuf, vdd))

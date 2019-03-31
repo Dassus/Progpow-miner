@@ -61,18 +61,16 @@ void SimulateClient::submitSolution(const Solution& _s)
 
     if (_s.work.algo == "ethash")
     {
-        accepted = EthashAux::verify(
-            _s.work.epoch, _s.work.header, _s.mixHash, _s.nonce, _s.work.boundary);
+        accepted = EthashAux::verify(_s.work.epoch, _s.work.header, _s.mixHash, _s.nonce, _s.work.boundary);
     }
     if (_s.work.algo == "progpow")
     {
-        accepted = ProgPoWAux::verify(
-            _s.work.epoch, _s.work.block, _s.work.header, _s.mixHash, _s.nonce, _s.work.boundary);
+        accepted =
+            ProgPoWAux::verify(_s.work.epoch, _s.work.block, _s.work.header, _s.mixHash, _s.nonce, _s.work.boundary);
     }
 
     std::chrono::milliseconds response_delay_ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - submit_start);
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - submit_start);
 
     if (accepted)
     {
@@ -110,9 +108,9 @@ void SimulateClient::workLoop()
         if (m_varDiff)
         {
             bool newJob = false;
-            auto seconds = std::chrono::duration_cast<std::chrono::seconds>(
-                std::chrono::steady_clock::now() - m_session->start)
-                               .count();
+            auto seconds =
+                std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - m_session->start)
+                    .count();
 
             // Change job every 10 seconds
             if (seconds % 10 == 0)

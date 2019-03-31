@@ -39,7 +39,6 @@ void Worker::startWorking()
     m_state.store(WorkerState::Starting, memory_order_relaxed);
 
     m_work.reset(new thread([&]() {
-
         setThreadName(m_name.c_str());
 
         WorkerState ex = WorkerState::Starting;
@@ -65,7 +64,6 @@ void Worker::startWorking()
             clog(WarnChannel) << "Terminating due to --exit";
             raise(SIGTERM);
         }
-
     }));
 
 

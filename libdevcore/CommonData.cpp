@@ -137,8 +137,7 @@ std::string dev::getTargetFromDiff(double diff, HexPrefix _prefix)
 
     // Normalize to 64 chars hex with "0x" prefix
     stringstream ss;
-    ss << (_prefix == HexPrefix::Add ? "0x" : "") << setw(64) << setfill('0') << std::hex
-       << product;
+    ss << (_prefix == HexPrefix::Add ? "0x" : "") << setw(64) << setfill('0') << std::hex << product;
 
     string target = ss.str();
     boost::algorithm::to_lower(target);
@@ -150,8 +149,7 @@ double dev::getDiffFromTarget(std::string _target)
     using namespace boost::multiprecision;
     using BigInteger = boost::multiprecision::cpp_int;
 
-    BigInteger dividend(
-        "0x00000000ffff0000000000000000000000000000000000000000000000000000");
+    BigInteger dividend("0x00000000ffff0000000000000000000000000000000000000000000000000000");
     BigInteger divisor(_target);
     string quotient = boost::lexical_cast<std::string>(dividend / divisor);
     BigInteger remainder = dividend % divisor;
@@ -175,14 +173,13 @@ double dev::getHashesToTarget(string _target)
     using namespace boost::multiprecision;
     using BigInteger = boost::multiprecision::cpp_int;
 
-    static BigInteger dividend(
-        "0xffff000000000000000000000000000000000000000000000000000000000000");
+    static BigInteger dividend("0xffff000000000000000000000000000000000000000000000000000000000000");
     BigInteger divisor(_target);
     return double(dividend / divisor);
 }
 
-std::string dev::getScaledSize(double _value, double _divisor, int _precision, string _sizes[],
-    size_t _numsizes, ScaleSuffix _suffix)
+std::string dev::getScaledSize(
+    double _value, double _divisor, int _precision, string _sizes[], size_t _numsizes, ScaleSuffix _suffix)
 {
     double _newvalue = _value;
     size_t i = 0;

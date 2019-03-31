@@ -17,8 +17,8 @@ class vector_ref
 public:
     using value_type = _T;
     using element_type = _T;
-    using mutable_value_type = typename std::conditional<std::is_const<_T>::value,
-        typename std::remove_const<_T>::type, _T>::type;
+    using mutable_value_type =
+        typename std::conditional<std::is_const<_T>::value, typename std::remove_const<_T>::type, _T>::type;
 
     static_assert(std::is_pod<value_type>::value,
         "vector_ref can only be used with PODs due to its low-level treatment of data.");
@@ -27,9 +27,7 @@ public:
     /// Creates a new vector_ref to point to @a _count elements starting at @a _data.
     vector_ref(_T* _data, size_t _count) : m_data(_data), m_count(_count) {}
     /// Creates a new vector_ref pointing to the data part of a string (given as pointer).
-    vector_ref(
-        typename std::conditional<std::is_const<_T>::value, std::string const*, std::string*>::type
-            _data)
+    vector_ref(typename std::conditional<std::is_const<_T>::value, std::string const*, std::string*>::type _data)
       : m_data(reinterpret_cast<_T*>(_data->data())), m_count(_data->size() / sizeof(_T))
     {}
     /// Creates a new vector_ref pointing to the data part of a vector (given as pointer).
@@ -38,15 +36,11 @@ public:
       : m_data(_data->data()), m_count(_data->size())
     {}
     /// Creates a new vector_ref pointing to the data part of a string (given as reference).
-    vector_ref(
-        typename std::conditional<std::is_const<_T>::value, std::string const&, std::string&>::type
-            _data)
+    vector_ref(typename std::conditional<std::is_const<_T>::value, std::string const&, std::string&>::type _data)
       : m_data(reinterpret_cast<_T*>(_data.data())), m_count(_data.size() / sizeof(_T))
     {}
 #if DEV_LDB
-    vector_ref(ldb::Slice const& _s)
-      : m_data(reinterpret_cast<_T*>(_s.data())), m_count(_s.size() / sizeof(_T))
-    {}
+    vector_ref(ldb::Slice const& _s) : m_data(reinterpret_cast<_T*>(_s.data())), m_count(_s.size() / sizeof(_T)) {}
 #endif
     explicit operator bool() const { return m_data && m_count; }
 
@@ -97,8 +91,7 @@ public:
     vector_ref<_T> cropped(size_t _begin, size_t _count) const
     {
         if (m_data && _begin <= m_count && _count <= m_count && _begin + _count <= m_count)
-            return vector_ref<_T>(
-                m_data + _begin, _count == ~size_t(0) ? m_count - _begin : _count);
+            return vector_ref<_T>(m_data + _begin, _count == ~size_t(0) ? m_count - _begin : _count);
         return {};
     }
     /// @returns a new vector_ref which is a shifted view of the original data (not going beyond
@@ -183,10 +176,7 @@ public:
         return m_data[_i];
     }
 
-    bool operator==(vector_ref<_T> const& _cmp) const
-    {
-        return m_data == _cmp.m_data && m_count == _cmp.m_count;
-    }
+    bool operator==(vector_ref<_T> const& _cmp) const { return m_data == _cmp.m_data && m_count == _cmp.m_count; }
     bool operator!=(vector_ref<_T> const& _cmp) const { return !operator==(_cmp); }
 
     void reset()
