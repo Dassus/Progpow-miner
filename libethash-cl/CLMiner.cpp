@@ -555,7 +555,7 @@ void CLMiner::enumDevices(
         ClPlatformTypeEnum platformType = ClPlatformTypeEnum::Unknown;
         if (platformName == "AMD Accelerated Parallel Processing")
             platformType = ClPlatformTypeEnum::Amd;
-        else if (platformName == "Clover")
+        else if (platformName == "Clover" || platformName == "Intel Gen OCL Driver")
             platformType = ClPlatformTypeEnum::Clover;
         else if (platformName == "NVIDIA CUDA")
             platformType = ClPlatformTypeEnum::Nvidia;
