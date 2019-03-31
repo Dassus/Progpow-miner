@@ -41,7 +41,7 @@ CUDAMiner::CUDAMiner(unsigned _index, CUSettings _settings, DeviceDescriptor& _d
   : Miner("cuda-", _index),
     m_settings(_settings),
     m_batch_size(_settings.gridSize * _settings.blockSize),
-    m_streams_batch_size(_settings.gridSize * _settings.blockSize * _settings.streams)
+    m_streams_batch_size(_settings.gridSize * _settings.blockSize * CUDA_STREAMS)
 {
     m_deviceDescriptor = _device;
 }
@@ -62,14 +62,14 @@ bool CUDAMiner::initDevice()
     {
         CUDA_SAFE_CALL(cudaSetDevice(m_deviceDescriptor.cuDeviceIndex));
         CUDA_SAFE_CALL(cudaDeviceReset());
-        CUDA_SAFE_CALL(cudaSetDeviceFlags(m_settings.schedule));
+        CUDA_SAFE_CALL(cudaSetDeviceFlags(4));  // sync mode
         CUDA_SAFE_CALL(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
 
         // create mining buffers
-        for (unsigned i = 0; i < m_settings.streams; ++i)
+        for (unsigned i = 0; i < CUDA_STREAMS; ++i)
         {
-            CUDA_SAFE_CALL(cudaMallocHost(&m_search_results.at(i), sizeof(search_results)));
-            CUDA_SAFE_CALL(cudaStreamCreateWithFlags(&m_streams.at(i), cudaStreamNonBlocking));
+            CUDA_SAFE_CALL(cudaMallocHost(m_search_results + i, sizeof(search_results)));
+            CUDA_SAFE_CALL(cudaStreamCreateWithFlags(m_streams + i, cudaStreamNonBlocking));
         }
     }
     catch (const cuda_runtime_error& ec)
@@ -167,9 +167,8 @@ bool CUDAMiner::initEpoch_internal()
 
 void CUDAMiner::workLoop()
 {
-    m_search_results.resize(m_settings.streams);
-    m_streams.resize(m_settings.streams);
-    m_active_streams.resize(m_settings.streams, false);
+    m_active_streams[0] = false;
+    m_active_streams[1] = false;
 
     if (!initDevice())
         return;
@@ -499,20 +498,19 @@ void CUDAMiner::ethash_search()
 
     while (true)
     {
-        launchIndex++;
-        streamIndex = launchIndex % m_settings.streams;
-        cudaStream_t stream = m_streams.at(streamIndex);
+        streamIndex = launchIndex % CUDA_STREAMS;
+        cudaStream_t stream = m_streams[streamIndex];
 
-        volatile search_results& buffer(*m_search_results.at(streamIndex));
+        volatile search_results& buffer(*m_search_results[streamIndex]);
 
-        if (launchIndex >= m_settings.streams || !m_new_work.load(memory_order_relaxed))
+        if (launchIndex >= CUDA_STREAMS || !m_new_work.load(memory_order_relaxed))
         {
-            if (m_active_streams.test(streamIndex))
+            if (m_active_streams[streamIndex])
             {
                 CUDA_SAFE_CALL(cudaStreamSynchronize(stream));
                 found_count = std::min((unsigned)buffer.count, MAX_SEARCH_RESULTS);
                 buffer.count = 0;
-                m_active_streams.reset(streamIndex);
+                m_active_streams[streamIndex] = false;
                 m_workSearchDuration = duration_cast<microseconds>(steady_clock::now() - m_workSearchStart).count();
                 m_workHashes += m_batch_size;
             }
@@ -520,7 +518,7 @@ void CUDAMiner::ethash_search()
 
         if (!m_new_work.load(memory_order_relaxed))
         {
-            if (launchIndex == 1)
+            if (launchIndex == 0)
             {
                 m_workSearchStart = steady_clock::now();
 #ifdef _DEVELOPER
@@ -534,9 +532,8 @@ void CUDAMiner::ethash_search()
 #endif
             }
 
-            run_ethash_search(
-                m_settings.gridSize, m_settings.blockSize, stream, &buffer, startNonce, m_settings.parallelHash);
-            m_active_streams.set(streamIndex);
+            run_ethash_search(m_settings.gridSize, m_settings.blockSize, stream, &buffer, startNonce);
+            m_active_streams[streamIndex] = true;
             startNonce += m_batch_size;
         }
 
@@ -561,8 +558,10 @@ void CUDAMiner::ethash_search()
         // Update the hash rate
         updateHashRate(m_workHashes, m_workSearchDuration, 0.1f);
 
-        if (!m_active_streams.any())
+        if (!m_active_streams[0] && !m_active_streams[1])
             break;
+
+        launchIndex++;
     }
 }
 
@@ -595,20 +594,19 @@ void CUDAMiner::progpow_search()
 
     while (true)
     {
-        launchIndex++;
-        streamIndex = launchIndex % m_settings.streams;
-        cudaStream_t stream = m_streams.at(streamIndex);
+        streamIndex = launchIndex % CUDA_STREAMS;
+        cudaStream_t stream = m_streams[streamIndex];
 
-        volatile search_results* buffer = m_search_results.at(streamIndex);
+        volatile search_results* buffer = m_search_results[streamIndex];
 
-        if (launchIndex >= m_settings.streams || !m_new_work.load(memory_order_relaxed))
+        if (launchIndex >= CUDA_STREAMS || !m_new_work.load(memory_order_relaxed))
         {
-            if (m_active_streams.test(streamIndex))
+            if (m_active_streams[streamIndex])
             {
                 CUDA_SAFE_CALL(cudaStreamSynchronize(stream));
                 found_count = std::min((unsigned)buffer->count, MAX_SEARCH_RESULTS);
                 buffer->count = 0;
-                m_active_streams.reset(streamIndex);
+                m_active_streams[streamIndex] = false;
                 m_workSearchDuration = duration_cast<microseconds>(steady_clock::now() - m_workSearchStart).count();
                 m_workHashes += m_batch_size;
             }
@@ -616,7 +614,7 @@ void CUDAMiner::progpow_search()
 
         if (!m_new_work.load(memory_order_relaxed))
         {
-            if (launchIndex == 1)
+            if (launchIndex == 0)
             {
                 m_workSearchStart = steady_clock::now();
 
@@ -639,7 +637,7 @@ void CUDAMiner::progpow_search()
                 0,                                                            // shared mem
                 stream,                                                       // stream
                 args, 0));                                                    // arguments
-            m_active_streams.set(streamIndex);
+            m_active_streams[streamIndex] = true;
             startNonce += m_batch_size;
         }
 
@@ -667,7 +665,9 @@ void CUDAMiner::progpow_search()
         // Update the hash rate
         updateHashRate(m_workHashes, m_workSearchDuration);
 
-        if (!m_active_streams.any())
+        if (!m_active_streams[0] && !m_active_streams[1])
             break;
+
+        launchIndex++;
     }
 }

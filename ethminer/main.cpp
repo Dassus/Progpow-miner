@@ -336,14 +336,6 @@ public:
             ->check(CLI::Range(32, 131072));
 
         app.add_set("--cuda-block-size,--cu-block-size", m_CUSettings.blockSize, {32, 64, 128, 256, 512}, "", true);
-
-        app.add_set("--cuda-parallel-hash,--cu-parallel-hash", m_CUSettings.parallelHash, {1, 2, 4, 8}, "", true);
-
-        string sched = "sync";
-        app.add_set("--cuda-schedule,--cu-schedule", sched, {"auto", "spin", "yield", "sync"}, "", true);
-
-        app.add_option("--cuda-streams,--cu-streams", m_CUSettings.streams, "", true)->check(CLI::Range(1, 32));
-
 #endif
 
 #if _CPU
@@ -461,18 +453,6 @@ public:
                 }
             }
         }
-
-
-#if _CUDA
-        if (sched == "auto")
-            m_CUSettings.schedule = 0;
-        else if (sched == "spin")
-            m_CUSettings.schedule = 1;
-        else if (sched == "yield")
-            m_CUSettings.schedule = 2;
-        else if (sched == "sync")
-            m_CUSettings.schedule = 4;
-#endif
 
         if (m_FarmSettings.tempStop)
         {
@@ -926,26 +906,6 @@ public:
                  << "                        Space separated list of device indexes to use" << endl
                  << "                        eg --cu-devices 0 2 3" << endl
                  << "                        If not set all available CUDA devices will be used"
-                 << endl
-                 << "    --cu-parallel-hash  UINT {1,2,4,8} Default = " << m_CUSettings.parallelHash << endl
-                 << "                        Set the number of parallel hashes per kernel" << endl
-                 << endl
-                 << "    --cu-streams        INT [1 .. 99] Default = " << m_CUSettings.streams << endl
-                 << "                        Set the number of streams per GPU" << endl
-                 << endl
-                 << "    --cu-schedule       TEXT Default = 'sync'" << endl
-                 << "                        Set the CUDA scheduler mode. Can be one of" << endl
-                 << "                        'auto'  Uses a heuristic based on the number of active " << endl
-                 << "                                CUDA contexts in the process (C) and the number" << endl
-                 << "                                of logical processors in the system (P)" << endl
-                 << "                                If C > P then 'yield' else 'spin'" << endl
-                 << "                        'spin'  Instructs CUDA to actively spin when waiting" << endl
-                 << "                                for results from the device" << endl
-                 << "                        'yield' Instructs CUDA to yield its thread when waiting for" << endl
-                 << "                                for results from the device" << endl
-                 << "                        'sync'  Instructs CUDA to block the CPU thread on a" << endl
-                 << "                                synchronize primitive when waiting for results" << endl
-                 << "                                from the device" << endl
                  << endl;
         }
 #endif

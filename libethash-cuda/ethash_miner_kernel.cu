@@ -912,7 +912,6 @@ DEV_INLINE void SHA3_512(uint2* s)
 }
 
 
-template <uint32_t _PARALLEL_HASH>
 DEV_INLINE bool compute_hash(uint64_t nonce, uint2* mix_hash)
 {
     // sha3_512(header .. nonce)
@@ -927,14 +926,14 @@ DEV_INLINE bool compute_hash(uint64_t nonce, uint2* mix_hash)
     const int thread_id = threadIdx.x & (THREADS_PER_HASH - 1);
     const int mix_idx = thread_id & 3;
 
-    for (int i = 0; i < THREADS_PER_HASH; i += _PARALLEL_HASH)
+    for (int i = 0; i < THREADS_PER_HASH; i += PARALLEL_HASH)
     {
-        uint4 mix[_PARALLEL_HASH];
-        uint32_t offset[_PARALLEL_HASH];
-        uint32_t init0[_PARALLEL_HASH];
+        uint4 mix[PARALLEL_HASH];
+        uint32_t offset[PARALLEL_HASH];
+        uint32_t init0[PARALLEL_HASH];
 
         // share init among threads
-        for (int p = 0; p < _PARALLEL_HASH; p++)
+        for (int p = 0; p < PARALLEL_HASH; p++)
         {
             uint2 shuffle[8];
             int ip = i + p;
@@ -971,7 +970,7 @@ DEV_INLINE bool compute_hash(uint64_t nonce, uint2* mix_hash)
             {
                 uint32_t ab = a + b;
 #pragma unroll
-                for (int p = 0; p < _PARALLEL_HASH; p++)
+                for (int p = 0; p < PARALLEL_HASH; p++)
                 {
                     offset[p] = fnv(init0[p] ^ ab, ((uint32_t*)&mix[p])[b]) % d_dag_size;
                     offset[p] = SHFL(offset[p], t, THREADS_PER_HASH);
@@ -980,7 +979,7 @@ DEV_INLINE bool compute_hash(uint64_t nonce, uint2* mix_hash)
             }
         }
 
-        for (int p = 0; p < _PARALLEL_HASH; p++)
+        for (int p = 0; p < PARALLEL_HASH; p++)
         {
             uint2 shuffle[4];
             uint32_t thread_mix = fnv_reduce(mix[p]);
@@ -1014,13 +1013,12 @@ DEV_INLINE bool compute_hash(uint64_t nonce, uint2* mix_hash)
     return false;
 }
 
-template <uint32_t _PARALLEL_HASH>
 __global__ void ethash_search(volatile search_results* g_output, uint64_t start_nonce)
 {
     uint32_t const gid = blockIdx.x * blockDim.x + threadIdx.x;
     uint64_t nonce = start_nonce + gid;
     uint2 mix[4];
-    if (compute_hash<_PARALLEL_HASH>(nonce, mix))
+    if (compute_hash(nonce, mix))
         return;
     uint32_t index = atomicInc((uint32_t*)&g_output->count, 0xffffffff);
     if (index >= MAX_SEARCH_RESULTS)
@@ -1037,26 +1035,9 @@ __global__ void ethash_search(volatile search_results* g_output, uint64_t start_
 }
 
 void run_ethash_search(uint32_t gridSize, uint32_t blockSize, cudaStream_t stream, volatile search_results* g_output,
-    uint64_t start_nonce, uint32_t parallelHash)
+    uint64_t start_nonce)
 {
-    switch (parallelHash)
-    {
-    case 1:
-        ethash_search<1><<<gridSize, blockSize, 0, stream>>>(g_output, start_nonce);
-        break;
-    case 2:
-        ethash_search<2><<<gridSize, blockSize, 0, stream>>>(g_output, start_nonce);
-        break;
-    case 4:
-        ethash_search<4><<<gridSize, blockSize, 0, stream>>>(g_output, start_nonce);
-        break;
-    case 8:
-        ethash_search<8><<<gridSize, blockSize, 0, stream>>>(g_output, start_nonce);
-        break;
-    default:
-        ethash_search<4><<<gridSize, blockSize, 0, stream>>>(g_output, start_nonce);
-        break;
-    }
+    ethash_search<<<gridSize, blockSize, 0, stream>>>(g_output, start_nonce);
     CUDA_SAFE_CALL(cudaGetLastError());
 }
 

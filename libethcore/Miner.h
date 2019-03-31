@@ -106,11 +106,8 @@ enum class SolutionAccountingEnum
 struct CUSettings
 {
     vector<unsigned> devices;
-    unsigned streams = 2;
-    unsigned schedule = 4;
     unsigned gridSize = 2048;
     unsigned blockSize = 512;
-    unsigned parallelHash = 4;
 };
 
 // Holds settings for OpenCL Miner
