@@ -18,9 +18,8 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 #pragma once
 
 /*
-   cl_progpow_miner_kernel() and sizeof_cl_progpow_miner_kernel()
-   are generated from progpow_miner_kernel.cu
+   cl_progpow_miner_kernel
+   is generated from progpow_miner_kernel.cu
    using cmake ../libethash-cl/bin2h.cmake
 */
-extern const char* cl_progpow_miner_kernel(void);
-extern size_t sizeof_cl_progpow_miner_kernel(void);
+extern const char* cl_progpow_miner_kernel;

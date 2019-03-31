@@ -293,7 +293,7 @@ void CUDAMiner::compileProgPoWKernel(uint32_t _seed, uint32_t _dagelms)
     // Build it now
     const char* name = "progpow_search";
     std::string source = ProgPow::getKern(_seed, _dagelms, ProgPow::KERNEL_CUDA);
-    source += std::string(cu_progpow_miner_kernel(), sizeof_cu_progpow_miner_kernel());
+    source += cu_progpow_miner_kernel;
 
 #ifdef _DEVELOPER
     if (g_logOptions & LOG_COMPILE)
