@@ -28,12 +28,11 @@ namespace dev
 {
 namespace eth
 {
-
 class EthashAux
 {
 public:
-    static bool verify(int epoch, h256 const& _headerHash, h256 const& _mixHash, uint64_t _nonce,
-        h256 const& _target) noexcept;
+    static bool verify(
+        int epoch, h256 const& _headerHash, h256 const& _mixHash, uint64_t _nonce, h256 const& _target) noexcept;
 };
 
 class ProgPoWAux

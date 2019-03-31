@@ -173,8 +173,7 @@ URI::URI(std::string uri, bool _sim) : m_uri{std::move(uri)}
         // and replace them with tokens in the authority
         std::regex btick("`((?:[^`])*)`");
         std::map<std::string, std::string> btick_blocks;
-        auto btick_blocks_begin =
-            std::sregex_iterator(m_authority.begin(), m_authority.end(), btick);
+        auto btick_blocks_begin = std::sregex_iterator(m_authority.begin(), m_authority.end(), btick);
         auto btick_blocks_end = std::sregex_iterator();
         int i = 0;
         for (std::sregex_iterator it = btick_blocks_begin; it != btick_blocks_end; ++it)
@@ -197,8 +196,7 @@ URI::URI(std::string uri, bool _sim) : m_uri{std::move(uri)}
         bool usrMatchFound = false;
         for (size_t i = 0; i < usr_patterns.size() && !usrMatchFound; i++)
         {
-            if (std::regex_search(
-                    m_userinfo, matches, usr_patterns.at(i), std::regex_constants::match_default))
+            if (std::regex_search(m_userinfo, matches, usr_patterns.at(i), std::regex_constants::match_default))
             {
                 usrMatchFound = true;
                 switch (i)
@@ -296,8 +294,7 @@ URI::URI(std::string uri, bool _sim) : m_uri{std::move(uri)}
         bool pathMatchFound = false;
         for (size_t i = 0; i < path_patterns.size() && !pathMatchFound; i++)
         {
-            if (std::regex_search(
-                    m_pathinfo, matches, path_patterns.at(i), std::regex_constants::match_default))
+            if (std::regex_search(m_pathinfo, matches, path_patterns.at(i), std::regex_constants::match_default))
             {
                 pathMatchFound = true;
                 switch (i)

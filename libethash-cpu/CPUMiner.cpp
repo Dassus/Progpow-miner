@@ -72,16 +72,14 @@ static size_t getTotalPhysAvailableMemory()
     long pages = sysconf(_SC_AVPHYS_PAGES);
     if (pages == -1L)
     {
-        cwarn << "Error in func " << __FUNCTION__ << " at sysconf(_SC_AVPHYS_PAGES) \""
-              << strerror(errno) << "\"\n";
+        cwarn << "Error in func " << __FUNCTION__ << " at sysconf(_SC_AVPHYS_PAGES) \"" << strerror(errno) << "\"\n";
         return 0;
     }
 
     long page_size = sysconf(_SC_PAGESIZE);
     if (page_size == -1L)
     {
-        cwarn << "Error in func " << __FUNCTION__ << " at sysconf(_SC_PAGESIZE) \""
-              << strerror(errno) << "\"\n";
+        cwarn << "Error in func " << __FUNCTION__ << " at sysconf(_SC_PAGESIZE) \"" << strerror(errno) << "\"\n";
         return 0;
     }
 
@@ -121,8 +119,8 @@ unsigned CPUMiner::getNumDevices()
     cpus_available = sysconf(_SC_NPROCESSORS_ONLN);
     if (cpus_available == -1L)
     {
-        cwarn << "Error in func " << __FUNCTION__ << " at sysconf(_SC_NPROCESSORS_ONLN) \""
-              << strerror(errno) << "\"\n";
+        cwarn << "Error in func " << __FUNCTION__ << " at sysconf(_SC_NPROCESSORS_ONLN) \"" << strerror(errno)
+              << "\"\n";
         return 0;
     }
     return cpus_available;
@@ -172,10 +170,8 @@ bool CPUMiner::initDevice()
     err = sched_setaffinity(0, sizeof(cpuset), &cpuset);
     if (err != 0)
     {
-        cwarn << "Error in func " << __FUNCTION__ << " at sched_setaffinity() \"" << strerror(errno)
-              << "\"";
-        cwarn << "cp-" << m_index << " could not bind thread to cpu "
-              << m_deviceDescriptor.cpCpuNumber;
+        cwarn << "Error in func " << __FUNCTION__ << " at sched_setaffinity() \"" << strerror(errno) << "\"";
+        cwarn << "cp-" << m_index << " could not bind thread to cpu " << m_deviceDescriptor.cpCpuNumber;
     }
 #else
     DWORD_PTR dwThreadAffinityMask = 1i64 << m_deviceDescriptor.cpCpuNumber;
@@ -183,8 +179,7 @@ bool CPUMiner::initDevice()
     previous_mask = SetThreadAffinityMask(GetCurrentThread(), dwThreadAffinityMask);
     if (previous_mask == NULL)
     {
-        cwarn << "cp-" << m_index << " could not bind thread to cpu "
-              << m_deviceDescriptor.cpCpuNumber;
+        cwarn << "cp-" << m_index << " could not bind thread to cpu " << m_deviceDescriptor.cpCpuNumber;
         // Handle Errorcode (GetLastError) ??
     }
 #endif
@@ -205,13 +200,11 @@ void CPUMiner::ethash_search()
         if (m_new_work.load(memory_order_relaxed) || paused() || shouldStop())
             break;
 
-        auto r = ethash::search(
-            context, header, boundary, m_work_active.startNonce, m_settings.batchSize);
+        auto r = ethash::search(context, header, boundary, m_work_active.startNonce, m_settings.batchSize);
         if (r.solution_found)
         {
             h256 mix{reinterpret_cast<byte*>(r.mix_hash.bytes), h256::ConstructFromPointer};
-            auto sol =
-                Solution{r.nonce, mix, m_work_active, std::chrono::steady_clock::now(), m_index};
+            auto sol = Solution{r.nonce, mix, m_work_active, std::chrono::steady_clock::now(), m_index};
 
             Farm::f().submitProof(sol);
 
@@ -243,13 +236,12 @@ void dev::eth::CPUMiner::progpow_search()
         if (m_new_work.load(memory_order_relaxed))
             break;
 
-        auto r = progpow::search(context, m_work_active.block, header, boundary,
-            m_work_active.startNonce, m_settings.batchSize);
+        auto r = progpow::search(
+            context, m_work_active.block, header, boundary, m_work_active.startNonce, m_settings.batchSize);
         if (r.solution_found)
         {
             h256 mix{reinterpret_cast<byte*>(r.mix_hash.bytes), h256::ConstructFromPointer};
-            auto sol =
-                Solution{r.nonce, mix, m_work_active, std::chrono::steady_clock::now(), m_index};
+            auto sol = Solution{r.nonce, mix, m_work_active, std::chrono::steady_clock::now(), m_index};
 
             Farm::f().submitProof(sol);
 
@@ -319,8 +311,8 @@ void CPUMiner::enumDevices(std::map<string, DeviceDescriptor>& _DevicesCollectio
 
         s.str("");
         s.clear();
-        s << "ethash::eval()/boost " << (BOOST_VERSION / 100000) << "."
-          << (BOOST_VERSION / 100 % 1000) << "." << (BOOST_VERSION % 100);
+        s << "ethash::eval()/boost " << (BOOST_VERSION / 100000) << "." << (BOOST_VERSION / 100 % 1000) << "."
+          << (BOOST_VERSION % 100);
         deviceDescriptor.name = s.str();
         deviceDescriptor.uniqueId = uniqueId;
         deviceDescriptor.type = DeviceTypeEnum::Cpu;

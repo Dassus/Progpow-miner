@@ -102,8 +102,7 @@ public:
             {
                 auto c = std::min<unsigned>(_b.size(), N);
                 for (unsigned i = 0; i < c; ++i)
-                    m_data[_t == AlignRight ? N - 1 - i : i] =
-                        _b[_t == AlignRight ? _b.size() - 1 - i : i];
+                    m_data[_t == AlignRight ? N - 1 - i : i] = _b[_t == AlignRight ? _b.size() - 1 - i : i];
             }
         }
     }
@@ -120,22 +119,16 @@ public:
             {
                 auto c = std::min<unsigned>(_b.size(), N);
                 for (unsigned i = 0; i < c; ++i)
-                    m_data[_t == AlignRight ? N - 1 - i : i] =
-                        _b[_t == AlignRight ? _b.size() - 1 - i : i];
+                    m_data[_t == AlignRight ? N - 1 - i : i] = _b[_t == AlignRight ? _b.size() - 1 - i : i];
             }
         }
     }
 
     /// Explicitly construct, copying from a bytes in memory with given pointer.
-    explicit FixedHash(byte const* _bs, ConstructFromPointerType /*unused*/)
-    {
-        memcpy(m_data.data(), _bs, N);
-    }
+    explicit FixedHash(byte const* _bs, ConstructFromPointerType /*unused*/) { memcpy(m_data.data(), _bs, N); }
 
     /// Explicitly construct, copying from a  string.
-    explicit FixedHash(std::string const& _s)
-      : FixedHash(fromHex(_s, WhenError::Throw), FailIfDifferent)
-    {}
+    explicit FixedHash(std::string const& _s) : FixedHash(fromHex(_s, WhenError::Throw), FailIfDifferent) {}
 
     /// Convert to arithmetic type.
     operator Arith() const { return fromBigEndian<Arith>(m_data); }
@@ -264,8 +257,7 @@ inline bool FixedHash<32>::operator==(FixedHash<32> const& _other) const
 {
     const uint64_t* hash1 = (const uint64_t*)data();
     const uint64_t* hash2 = (const uint64_t*)_other.data();
-    return (hash1[0] == hash2[0]) && (hash1[1] == hash2[1]) && (hash1[2] == hash2[2]) &&
-           (hash1[3] == hash2[3]);
+    return (hash1[0] == hash2[0]) && (hash1[1] == hash2[1]) && (hash1[2] == hash2[2]) && (hash1[3] == hash2[3]);
 }
 
 /// Fast std::hash compatible hash function object for h256.

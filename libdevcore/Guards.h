@@ -70,7 +70,6 @@ struct GenericGuardBool : GuardType
  * @endcode
  */
 
-#define DEV_GUARDED(MUTEX) \
-    for (GenericGuardBool<Guard, Mutex> __eth_l(MUTEX); __eth_l.b; __eth_l.b = false)
+#define DEV_GUARDED(MUTEX) for (GenericGuardBool<Guard, Mutex> __eth_l(MUTEX); __eth_l.b; __eth_l.b = false)
 
 }  // namespace dev

@@ -40,7 +40,7 @@ wrap_nvml_handle* wrap_nvml_create()
     /* Windows */
 #define libnvidia_ml "%PROGRAMFILES%/NVIDIA Corporation/NVSMI/nvml.dll"
 #elif defined(__linux) && (defined(__i386__) || defined(__ARM_ARCH_7A__))
-/* In rpm based linux distributions link name is with extension .1 */
+    /* In rpm based linux distributions link name is with extension .1 */
     /* 32-bit linux assumed */
 #define libnvidia_ml "libnvidia-ml.so.1"
 #elif defined(__linux)
@@ -66,34 +66,32 @@ wrap_nvml_handle* wrap_nvml_create()
         cwarn << "NVIDIA hardware monitoring disabled";
         return nullptr;
     }
-        
+
 
     nvmlh = (wrap_nvml_handle*)calloc(1, sizeof(wrap_nvml_handle));
 
     nvmlh->nvml_dll = nvml_dll;
 
     nvmlh->nvmlInit = (wrap_nvmlReturn_t(*)(void))wrap_dlsym(nvmlh->nvml_dll, "nvmlInit");
-    nvmlh->nvmlDeviceGetCount =
-        (wrap_nvmlReturn_t(*)(int*))wrap_dlsym(nvmlh->nvml_dll, "nvmlDeviceGetCount_v2");
-    nvmlh->nvmlDeviceGetHandleByIndex = (wrap_nvmlReturn_t(*)(int, wrap_nvmlDevice_t*))wrap_dlsym(
-        nvmlh->nvml_dll, "nvmlDeviceGetHandleByIndex_v2");
-    nvmlh->nvmlDeviceGetPciInfo = (wrap_nvmlReturn_t(*)(
-        wrap_nvmlDevice_t, wrap_nvmlPciInfo_t*))wrap_dlsym(nvmlh->nvml_dll, "nvmlDeviceGetPciInfo");
-    nvmlh->nvmlDeviceGetName = (wrap_nvmlReturn_t(*)(wrap_nvmlDevice_t, char*, int))wrap_dlsym(
-        nvmlh->nvml_dll, "nvmlDeviceGetName");
-    nvmlh->nvmlDeviceGetTemperature = (wrap_nvmlReturn_t(*)(wrap_nvmlDevice_t, int,
-        unsigned int*))wrap_dlsym(nvmlh->nvml_dll, "nvmlDeviceGetTemperature");
-    nvmlh->nvmlDeviceGetFanSpeed = (wrap_nvmlReturn_t(*)(
-        wrap_nvmlDevice_t, unsigned int*))wrap_dlsym(nvmlh->nvml_dll, "nvmlDeviceGetFanSpeed");
-    nvmlh->nvmlDeviceGetPowerUsage = (wrap_nvmlReturn_t(*)(
-        wrap_nvmlDevice_t, unsigned int*))wrap_dlsym(nvmlh->nvml_dll, "nvmlDeviceGetPowerUsage");
+    nvmlh->nvmlDeviceGetCount = (wrap_nvmlReturn_t(*)(int*))wrap_dlsym(nvmlh->nvml_dll, "nvmlDeviceGetCount_v2");
+    nvmlh->nvmlDeviceGetHandleByIndex =
+        (wrap_nvmlReturn_t(*)(int, wrap_nvmlDevice_t*))wrap_dlsym(nvmlh->nvml_dll, "nvmlDeviceGetHandleByIndex_v2");
+    nvmlh->nvmlDeviceGetPciInfo = (wrap_nvmlReturn_t(*)(wrap_nvmlDevice_t, wrap_nvmlPciInfo_t*))wrap_dlsym(
+        nvmlh->nvml_dll, "nvmlDeviceGetPciInfo");
+    nvmlh->nvmlDeviceGetName =
+        (wrap_nvmlReturn_t(*)(wrap_nvmlDevice_t, char*, int))wrap_dlsym(nvmlh->nvml_dll, "nvmlDeviceGetName");
+    nvmlh->nvmlDeviceGetTemperature = (wrap_nvmlReturn_t(*)(wrap_nvmlDevice_t, int, unsigned int*))wrap_dlsym(
+        nvmlh->nvml_dll, "nvmlDeviceGetTemperature");
+    nvmlh->nvmlDeviceGetFanSpeed =
+        (wrap_nvmlReturn_t(*)(wrap_nvmlDevice_t, unsigned int*))wrap_dlsym(nvmlh->nvml_dll, "nvmlDeviceGetFanSpeed");
+    nvmlh->nvmlDeviceGetPowerUsage =
+        (wrap_nvmlReturn_t(*)(wrap_nvmlDevice_t, unsigned int*))wrap_dlsym(nvmlh->nvml_dll, "nvmlDeviceGetPowerUsage");
     nvmlh->nvmlShutdown = (wrap_nvmlReturn_t(*)())wrap_dlsym(nvmlh->nvml_dll, "nvmlShutdown");
 
-    if (nvmlh->nvmlInit == nullptr || nvmlh->nvmlShutdown == nullptr ||
-        nvmlh->nvmlDeviceGetCount == nullptr || nvmlh->nvmlDeviceGetHandleByIndex == nullptr ||
-        nvmlh->nvmlDeviceGetPciInfo == nullptr || nvmlh->nvmlDeviceGetName == nullptr ||
-        nvmlh->nvmlDeviceGetTemperature == nullptr || nvmlh->nvmlDeviceGetFanSpeed == nullptr ||
-        nvmlh->nvmlDeviceGetPowerUsage == nullptr)
+    if (nvmlh->nvmlInit == nullptr || nvmlh->nvmlShutdown == nullptr || nvmlh->nvmlDeviceGetCount == nullptr ||
+        nvmlh->nvmlDeviceGetHandleByIndex == nullptr || nvmlh->nvmlDeviceGetPciInfo == nullptr ||
+        nvmlh->nvmlDeviceGetName == nullptr || nvmlh->nvmlDeviceGetTemperature == nullptr ||
+        nvmlh->nvmlDeviceGetFanSpeed == nullptr || nvmlh->nvmlDeviceGetPowerUsage == nullptr)
     {
         cwarn << "Failed to obtain all required NVML function pointers";
         cwarn << "NVIDIA hardware monitoring disabled";
@@ -163,8 +161,8 @@ int wrap_nvml_get_tempC(wrap_nvml_handle* nvmlh, int gpuindex, unsigned int* tem
     if (gpuindex < 0 || gpuindex >= nvmlh->nvml_gpucount)
         return -1;
 
-    if (nvmlh->nvmlDeviceGetTemperature(
-            nvmlh->devs[gpuindex], 0u /* NVML_TEMPERATURE_GPU */, tempC) != WRAPNVML_SUCCESS)
+    if (nvmlh->nvmlDeviceGetTemperature(nvmlh->devs[gpuindex], 0u /* NVML_TEMPERATURE_GPU */, tempC) !=
+        WRAPNVML_SUCCESS)
         return -1;
 
     return 0;

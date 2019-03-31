@@ -27,8 +27,7 @@ unsigned Miner::s_minersCount = 0;
 
 FarmFace* FarmFace::m_this = nullptr;
 
-Miner::Miner(std::string const& _name, unsigned _index)
-  : Worker(_name + std::to_string(_index)), m_index(_index)
+Miner::Miner(std::string const& _name, unsigned _index) : Worker(_name + std::to_string(_index)), m_index(_index)
 {
     m_work_latest.header = h256();
 }
@@ -136,8 +135,7 @@ bool Miner::initEpoch()
     {
         while (s_dagLoadIndex < m_index)
         {
-            boost::system_time const timeout =
-                boost::get_system_time() + boost::posix_time::seconds(3);
+            boost::system_time const timeout = boost::get_system_time() + boost::posix_time::seconds(3);
             boost::mutex::scoped_lock l(x_work);
             m_dag_loaded_signal.timed_wait(l, timeout);
         }
@@ -172,7 +170,6 @@ bool Miner::initEpoch_internal()
 
 void Miner::minerLoop()
 {
-
     int newEpoch;
     uint32_t newProgPoWPeriod;
 
@@ -186,8 +183,7 @@ void Miner::minerLoop()
         // Wait for work or 3 seconds (whichever the first)
         if (!m_new_work.load(memory_order_relaxed))
         {
-            boost::system_time const timeout =
-                boost::get_system_time() + boost::posix_time::seconds(3);
+            boost::system_time const timeout = boost::get_system_time() + boost::posix_time::seconds(3);
             boost::mutex::scoped_lock l(x_work);
             m_new_work_signal.timed_wait(l, timeout);
             continue;
@@ -244,7 +240,6 @@ void Miner::minerLoop()
         // Epoch change ?
         if (newEpoch)
         {
-
             // If mining algo is ProgPoW invoke async compilation
             // of kernel while DAG is generating. Epoch context is already loaded
             if (m_work_active.algo == "progpow")
@@ -283,7 +278,7 @@ void Miner::minerLoop()
                     if (!loadProgPoWKernel(newProgPoWPeriod))
                     {
                         clog << "Unable to load proper ProgPoW kernel";
-                        break; // Exit the thread
+                        break;  // Exit the thread
                     }
                 }
             }
@@ -311,7 +306,7 @@ void Miner::updateHashRate(uint32_t _hashes, uint64_t _microseconds, float _alph
     // Signal we've received an update
     m_hrLive.store(true, memory_order_relaxed);
 
-    // If the sampling interval is too small treat this call as 
+    // If the sampling interval is too small treat this call as
     // as simple "I'm alive" call.
     // Minimum sampling interval is 1s.
     if (_microseconds < 1000000ULL)
@@ -320,10 +315,9 @@ void Miner::updateHashRate(uint32_t _hashes, uint64_t _microseconds, float _alph
     float instantHr = float(_hashes * 1.0e6f) / _microseconds;
     float avgHr = (m_hr.load(memory_order_relaxed) * _alpha) + (instantHr * (1.0f - _alpha));
     m_hr.store(avgHr, memory_order_relaxed);
-    
 }
 
-void Miner::invokeAsyncCompile(uint32_t _seed, bool _wait) 
+void Miner::invokeAsyncCompile(uint32_t _seed, bool _wait)
 {
     if (m_compilerThread)
     {
@@ -355,7 +349,6 @@ void Miner::invokeAsyncCompile(uint32_t _seed, bool _wait)
         m_compilerThread->join();
         m_compilerThread.reset();
     }
-        
 }
 
 }  // namespace eth

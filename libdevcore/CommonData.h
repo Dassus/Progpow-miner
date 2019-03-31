@@ -124,8 +124,7 @@ inline T fromBigEndian(_In const& _bytes)
 {
     T ret = (T)0;
     for (auto i : _bytes)
-        ret =
-            (T)((ret << 8) | (byte)(typename std::make_unsigned<typename _In::value_type>::type)i);
+        ret = (T)((ret << 8) | (byte)(typename std::make_unsigned<typename _In::value_type>::type)i);
     return ret;
 }
 
@@ -236,16 +235,14 @@ double getDiffFromTarget(std::string _target);
 double getHashesToTarget(std::string _target);
 
 // Generic function to scale a value
-std::string getScaledSize(double _value, double _divisor, int _precision, std::string _sizes[],
-    size_t _numsizes, ScaleSuffix _suffix = ScaleSuffix::Add);
+std::string getScaledSize(double _value, double _divisor, int _precision, std::string _sizes[], size_t _numsizes,
+    ScaleSuffix _suffix = ScaleSuffix::Add);
 
 // Formats hashrate
-std::string getFormattedHashes(
-    double _hr, ScaleSuffix _suffix = ScaleSuffix::Add, int _precision = 2);
+std::string getFormattedHashes(double _hr, ScaleSuffix _suffix = ScaleSuffix::Add, int _precision = 2);
 
 // Formats memory units
-std::string getFormattedMemory(
-    double _mem, ScaleSuffix _suffix = ScaleSuffix::Add, int _precision = 2);
+std::string getFormattedMemory(double _mem, ScaleSuffix _suffix = ScaleSuffix::Add, int _precision = 2);
 
 // Adjust string to a fixed length filling chars to the Left
 std::string padLeft(std::string _value, size_t _length, char _fillChar);

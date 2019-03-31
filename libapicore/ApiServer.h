@@ -21,7 +21,6 @@ using boost::asio::ip::tcp;
 class ApiConnection
 {
 public:
-
     ApiConnection(boost::asio::io_service::strand& _strand, int id, bool readonly, string password);
 
     ~ApiConnection() = default;
@@ -41,8 +40,7 @@ private:
     void disconnect();
     void processRequest(Json::Value& jRequest, Json::Value& jResponse);
     void recvSocketData();
-    void onRecvSocketDataCompleted(
-        const boost::system::error_code& ec, std::size_t bytes_transferred);
+    void onRecvSocketDataCompleted(const boost::system::error_code& ec, std::size_t bytes_transferred);
     void sendSocketData(Json::Value const& jReq, bool _disconnect = false);
     void sendSocketData(std::string const& _s, bool _disconnect = false);
     void onSendSocketDataCompleted(const boost::system::error_code& ec, bool _disconnect = false);

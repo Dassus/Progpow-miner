@@ -29,9 +29,8 @@ public:
     void submitSolution(const Solution& solution) override;
 
 private:
-
     void workLoop() override;
-    
+
     unsigned m_block;
     double m_diff;
     bool m_varDiff;

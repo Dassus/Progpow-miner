@@ -61,30 +61,27 @@ wrap_adl_handle* wrap_adl_create()
 
     adlh->adl_dll = adl_dll;
 
-    adlh->adlMainControlCreate = (wrap_adlReturn_t(*)(ADL_MAIN_MALLOC_CALLBACK, int))wrap_dlsym(
-        adlh->adl_dll, "ADL_Main_Control_Create");
+    adlh->adlMainControlCreate =
+        (wrap_adlReturn_t(*)(ADL_MAIN_MALLOC_CALLBACK, int))wrap_dlsym(adlh->adl_dll, "ADL_Main_Control_Create");
     adlh->adlAdapterNumberOfAdapters =
         (wrap_adlReturn_t(*)(int*))wrap_dlsym(adlh->adl_dll, "ADL_Adapter_NumberOfAdapters_Get");
-    adlh->adlAdapterAdapterInfoGet = (wrap_adlReturn_t(*)(LPAdapterInfo, int))wrap_dlsym(
-        adlh->adl_dll, "ADL_Adapter_AdapterInfo_Get");
-    adlh->adlAdapterAdapterIdGet =
-        (wrap_adlReturn_t(*)(int, int*))wrap_dlsym(adlh->adl_dll, "ADL_Adapter_ID_Get");
-    adlh->adlOverdrive5TemperatureGet = (wrap_adlReturn_t(*)(int, int, ADLTemperature*))wrap_dlsym(
-        adlh->adl_dll, "ADL_Overdrive5_Temperature_Get");
-    adlh->adlOverdrive5FanSpeedGet = (wrap_adlReturn_t(*)(int, int, ADLFanSpeedValue*))wrap_dlsym(
-        adlh->adl_dll, "ADL_Overdrive5_FanSpeed_Get");
-    adlh->adlMainControlRefresh =
-        (wrap_adlReturn_t(*)(void))wrap_dlsym(adlh->adl_dll, "ADL_Main_Control_Refresh");
-    adlh->adlMainControlDestroy =
-        (wrap_adlReturn_t(*)(void))wrap_dlsym(adlh->adl_dll, "ADL_Main_Control_Destroy");
-    adlh->adl2MainControlCreate = (wrap_adlReturn_t(*)(ADL_MAIN_MALLOC_CALLBACK, int,
-        ADL_CONTEXT_HANDLE*))wrap_dlsym(adlh->adl_dll, "ADL2_Main_Control_Create");
-    adlh->adl2MainControlDestroy = (wrap_adlReturn_t(*)(ADL_CONTEXT_HANDLE))wrap_dlsym(
-        adlh->adl_dll, "ADL_Main_Control_Destroy");
-    adlh->adl2Overdrive6CurrentPowerGet = (wrap_adlReturn_t(*)(ADL_CONTEXT_HANDLE, int, int,
-        int*))wrap_dlsym(adlh->adl_dll, "ADL2_Overdrive6_CurrentPower_Get");
-    adlh->adl2MainControlRefresh = (wrap_adlReturn_t(*)(ADL_CONTEXT_HANDLE))wrap_dlsym(
-        adlh->adl_dll, "ADL2_Main_Control_Refresh");
+    adlh->adlAdapterAdapterInfoGet =
+        (wrap_adlReturn_t(*)(LPAdapterInfo, int))wrap_dlsym(adlh->adl_dll, "ADL_Adapter_AdapterInfo_Get");
+    adlh->adlAdapterAdapterIdGet = (wrap_adlReturn_t(*)(int, int*))wrap_dlsym(adlh->adl_dll, "ADL_Adapter_ID_Get");
+    adlh->adlOverdrive5TemperatureGet =
+        (wrap_adlReturn_t(*)(int, int, ADLTemperature*))wrap_dlsym(adlh->adl_dll, "ADL_Overdrive5_Temperature_Get");
+    adlh->adlOverdrive5FanSpeedGet =
+        (wrap_adlReturn_t(*)(int, int, ADLFanSpeedValue*))wrap_dlsym(adlh->adl_dll, "ADL_Overdrive5_FanSpeed_Get");
+    adlh->adlMainControlRefresh = (wrap_adlReturn_t(*)(void))wrap_dlsym(adlh->adl_dll, "ADL_Main_Control_Refresh");
+    adlh->adlMainControlDestroy = (wrap_adlReturn_t(*)(void))wrap_dlsym(adlh->adl_dll, "ADL_Main_Control_Destroy");
+    adlh->adl2MainControlCreate = (wrap_adlReturn_t(*)(ADL_MAIN_MALLOC_CALLBACK, int, ADL_CONTEXT_HANDLE*))wrap_dlsym(
+        adlh->adl_dll, "ADL2_Main_Control_Create");
+    adlh->adl2MainControlDestroy =
+        (wrap_adlReturn_t(*)(ADL_CONTEXT_HANDLE))wrap_dlsym(adlh->adl_dll, "ADL_Main_Control_Destroy");
+    adlh->adl2Overdrive6CurrentPowerGet = (wrap_adlReturn_t(*)(ADL_CONTEXT_HANDLE, int, int, int*))wrap_dlsym(
+        adlh->adl_dll, "ADL2_Overdrive6_CurrentPower_Get");
+    adlh->adl2MainControlRefresh =
+        (wrap_adlReturn_t(*)(ADL_CONTEXT_HANDLE))wrap_dlsym(adlh->adl_dll, "ADL2_Main_Control_Refresh");
 
 
     if (adlh->adlMainControlCreate == nullptr || adlh->adlMainControlDestroy == nullptr ||
@@ -203,14 +200,12 @@ int wrap_adl_get_gpu_pci_id(wrap_adl_handle* adlh, int gpuindex, char* idbuf, in
 
 int wrap_adl_get_tempC(wrap_adl_handle* adlh, int gpuindex, unsigned int* tempC)
 {
-    
     if (gpuindex < 0 || gpuindex >= adlh->adl_gpucount)
         return -1;
 
     ADLTemperature* temperature = new ADLTemperature();
 
-    if (adlh->adlOverdrive5TemperatureGet(adlh->phys_logi_device_id[gpuindex], 0, temperature) !=
-        WRAPADL_OK)
+    if (adlh->adlOverdrive5TemperatureGet(adlh->phys_logi_device_id[gpuindex], 0, temperature) != WRAPADL_OK)
         return -1;
 
     *tempC = unsigned(temperature->iTemperature / 1000);
@@ -220,7 +215,6 @@ int wrap_adl_get_tempC(wrap_adl_handle* adlh, int gpuindex, unsigned int* tempC)
 
 int wrap_adl_get_fanpcnt(wrap_adl_handle* adlh, int gpuindex, unsigned int* fanpcnt)
 {
-
     if (gpuindex < 0 || gpuindex >= adlh->adl_gpucount)
         return -1;
 
@@ -237,13 +231,12 @@ int wrap_adl_get_fanpcnt(wrap_adl_handle* adlh, int gpuindex, unsigned int* fanp
 
 int wrap_adl_get_power_usage(wrap_adl_handle* adlh, int gpuindex, unsigned int* miliwatts)
 {
-
     if (gpuindex < 0 || gpuindex >= adlh->adl_gpucount)
         return -1;
 
     int power = 0;
-    if (adlh->adl2Overdrive6CurrentPowerGet(
-            adlh->context, adlh->phys_logi_device_id[gpuindex], 0, &power) != WRAPADL_OK)
+    if (adlh->adl2Overdrive6CurrentPowerGet(adlh->context, adlh->phys_logi_device_id[gpuindex], 0, &power) !=
+        WRAPADL_OK)
         return -1;
 
     *miliwatts = (unsigned int)(power * 3.90625);

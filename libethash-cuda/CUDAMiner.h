@@ -74,7 +74,7 @@ private:
     void unloadProgPoWKernel();
 
     bool m_progpow_kernel_loaded = false;
-    
+
 
     CUmodule m_module;
     CUfunction m_kernel;

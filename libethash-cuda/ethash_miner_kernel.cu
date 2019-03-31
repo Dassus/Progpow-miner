@@ -15,8 +15,8 @@ You should have received a copy of the GNU General Public License
 along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ethash_miner_kernel.h"
 #include "cuda_helper.h"
+#include "ethash_miner_kernel.h"
 
 __constant__ uint32_t d_dag_size;
 __constant__ hash128_t* d_dag;
@@ -64,29 +64,25 @@ DEV_INLINE uint32_t fnv_reduce(uint4 v)
         (dst)[i] = (src)[i];         \
     }
 
-__device__ __constant__ uint2 const keccak_round_constants[24] = {{0x00000001, 0x00000000},
-    {0x00008082, 0x00000000}, {0x0000808a, 0x80000000}, {0x80008000, 0x80000000},
-    {0x0000808b, 0x00000000}, {0x80000001, 0x00000000}, {0x80008081, 0x80000000},
-    {0x00008009, 0x80000000}, {0x0000008a, 0x00000000}, {0x00000088, 0x00000000},
-    {0x80008009, 0x00000000}, {0x8000000a, 0x00000000}, {0x8000808b, 0x00000000},
-    {0x0000008b, 0x80000000}, {0x00008089, 0x80000000}, {0x00008003, 0x80000000},
-    {0x00008002, 0x80000000}, {0x00000080, 0x80000000}, {0x0000800a, 0x00000000},
-    {0x8000000a, 0x80000000}, {0x80008081, 0x80000000}, {0x00008080, 0x80000000},
+__device__ __constant__ uint2 const keccak_round_constants[24] = {{0x00000001, 0x00000000}, {0x00008082, 0x00000000},
+    {0x0000808a, 0x80000000}, {0x80008000, 0x80000000}, {0x0000808b, 0x00000000}, {0x80000001, 0x00000000},
+    {0x80008081, 0x80000000}, {0x00008009, 0x80000000}, {0x0000008a, 0x00000000}, {0x00000088, 0x00000000},
+    {0x80008009, 0x00000000}, {0x8000000a, 0x00000000}, {0x8000808b, 0x00000000}, {0x0000008b, 0x80000000},
+    {0x00008089, 0x80000000}, {0x00008003, 0x80000000}, {0x00008002, 0x80000000}, {0x00000080, 0x80000000},
+    {0x0000800a, 0x00000000}, {0x8000000a, 0x80000000}, {0x80008081, 0x80000000}, {0x00008080, 0x80000000},
     {0x80000001, 0x00000000}, {0x80008008, 0x80000000}};
 
 DEV_INLINE uint2 xor5(const uint2 a, const uint2 b, const uint2 c, const uint2 d, const uint2 e)
 {
 #if __CUDA_ARCH__ >= 500 && CUDA_VERSION >= 7050
     uint2 result;
-    asm(
-        "// xor5\n\t"
+    asm("// xor5\n\t"
         "lop3.b32 %0, %2, %3, %4, 0x96;\n\t"
         "lop3.b32 %0, %0, %5, %6, 0x96;\n\t"
         "lop3.b32 %1, %7, %8, %9, 0x96;\n\t"
         "lop3.b32 %1, %1, %10, %11, 0x96;"
         : "=r"(result.x), "=r"(result.y)
-        : "r"(a.x), "r"(b.x), "r"(c.x), "r"(d.x), "r"(e.x), "r"(a.y), "r"(b.y), "r"(c.y), "r"(d.y),
-        "r"(e.y));
+        : "r"(a.x), "r"(b.x), "r"(c.x), "r"(d.x), "r"(e.x), "r"(a.y), "r"(b.y), "r"(c.y), "r"(d.y), "r"(e.y));
     return result;
 #else
     return a ^ b ^ c ^ d ^ e;
@@ -97,8 +93,7 @@ DEV_INLINE uint2 xor3(const uint2 a, const uint2 b, const uint2 c)
 {
 #if __CUDA_ARCH__ >= 500 && CUDA_VERSION >= 7050
     uint2 result;
-    asm(
-        "// xor3\n\t"
+    asm("// xor3\n\t"
         "lop3.b32 %0, %2, %3, %4, 0x96;\n\t"
         "lop3.b32 %1, %5, %6, %7, 0x96;"
         : "=r"(result.x), "=r"(result.y)
@@ -113,8 +108,7 @@ DEV_INLINE uint2 chi(const uint2 a, const uint2 b, const uint2 c)
 {
 #if __CUDA_ARCH__ >= 500 && CUDA_VERSION >= 7050
     uint2 result;
-    asm(
-        "// chi\n\t"
+    asm("// chi\n\t"
         "lop3.b32 %0, %2, %3, %4, 0xD2;\n\t"
         "lop3.b32 %1, %5, %6, %7, 0xD2;"
         : "=r"(result.x), "=r"(result.y)
@@ -128,7 +122,7 @@ DEV_INLINE uint2 chi(const uint2 a, const uint2 b, const uint2 c)
 
 DEV_INLINE void keccak_f1600_init(uint2* s, uint2* state)
 {
-    //uint2 s[25];
+    // uint2 s[25];
     uint2 t[5], u, v;
     const uint2 u2zero = make_uint2(0, 0);
 
@@ -140,7 +134,7 @@ DEV_INLINE void keccak_f1600_init(uint2* s, uint2* state)
     s[7] = u2zero;
     s[8] = make_uint2(0, 0x80000000);
 
-    #pragma unroll
+#pragma unroll
     for (int i = 9; i < 25; i++)
         s[i] = u2zero;
 
@@ -416,7 +410,7 @@ DEV_INLINE void keccak_f1600_init(uint2* s, uint2* state)
     s[24] ^= u;
 
     /* rho pi: b[..] = rotl(a[..], ..) */
-    //u = s[1];
+    // u = s[1];
 
     s[1] = ROL2(s[6], 44);
     s[6] = ROL2(s[9], 20);
@@ -444,18 +438,18 @@ DEV_INLINE void keccak_f1600_init(uint2* s, uint2* state)
     /* iota: a[0,0] ^= round constant */
     s[0] ^= keccak_round_constants[23];
 
-    #pragma unroll
+#pragma unroll
     for (int i = 0; i < 12; ++i)
         state[i] = s[i];
 }
 
 DEV_INLINE uint64_t keccak_f1600_final(uint2* s, uint2* state)
 {
-    //uint2 s[25];
+    // uint2 s[25];
     uint2 t[5], u, v;
     const uint2 u2zero = make_uint2(0, 0);
 
-    #pragma unroll
+#pragma unroll
     for (int i = 0; i < 12; ++i)
         s[i] = state[i];
 
@@ -465,7 +459,7 @@ DEV_INLINE uint64_t keccak_f1600_final(uint2* s, uint2* state)
     s[15] = u2zero;
     s[16] = make_uint2(0, 0x80000000);
 
-    #pragma unroll
+#pragma unroll
     for (uint32_t i = 17; i < 25; i++)
         s[i] = u2zero;
 
@@ -733,7 +727,7 @@ DEV_INLINE void SHA3_512(uint2* s)
 
     s[8] = make_uint2(1, 0x80000000);
 
-    #pragma unroll
+#pragma unroll
     for (int i = 9; i < 25; i++)
         s[i] = u2zero;
 
@@ -888,7 +882,7 @@ DEV_INLINE void SHA3_512(uint2* s)
     s[24] ^= u;
 
     /* rho pi: b[..] = rotl(a[..], ..) */
-    //u = s[1];
+    // u = s[1];
 
     s[1] = ROL2(s[6], 44);
     s[6] = ROL2(s[9], 20);
@@ -945,7 +939,7 @@ DEV_INLINE bool compute_hash(uint64_t nonce, uint2* mix_hash)
             uint2 shuffle[8];
             int ip = i + p;
 
-            #pragma unroll
+#pragma unroll
             for (int j = 0; j < 8; j++)
             {
                 shuffle[j].x = SHFL(state[j].x, ip, THREADS_PER_HASH);
@@ -976,7 +970,7 @@ DEV_INLINE bool compute_hash(uint64_t nonce, uint2* mix_hash)
             for (uint32_t b = 0; b < 4; b++)
             {
                 uint32_t ab = a + b;
-                #pragma unroll
+#pragma unroll
                 for (int p = 0; p < _PARALLEL_HASH; p++)
                 {
                     offset[p] = fnv(init0[p] ^ ab, ((uint32_t*)&mix[p])[b]) % d_dag_size;
@@ -1042,8 +1036,8 @@ __global__ void ethash_search(volatile search_results* g_output, uint64_t start_
     g_output->result[index].mix[7] = mix[3].y;
 }
 
-void run_ethash_search(uint32_t gridSize, uint32_t blockSize, cudaStream_t stream,
-    volatile search_results* g_output, uint64_t start_nonce, uint32_t parallelHash)
+void run_ethash_search(uint32_t gridSize, uint32_t blockSize, cudaStream_t stream, volatile search_results* g_output,
+    uint64_t start_nonce, uint32_t parallelHash)
 {
     switch (parallelHash)
     {
@@ -1105,11 +1099,11 @@ __global__ void ethash_calculate_dag_item(uint32_t start)
         uint32_t shuffle_index = SHFL(node_index, t, 4);
         uint4 s[4];
 
-        #pragma unroll
+#pragma unroll
         for (int w = 0; w < 4; w++)
         {
             s[w] = make_uint4(SHFL(dag_node.uint4s[w].x, t, 4), SHFL(dag_node.uint4s[w].y, t, 4),
-                              SHFL(dag_node.uint4s[w].z, t, 4), SHFL(dag_node.uint4s[w].w, t, 4));
+                SHFL(dag_node.uint4s[w].z, t, 4), SHFL(dag_node.uint4s[w].w, t, 4));
         }
         if (shuffle_index < d_dag_size * 2)
         {
@@ -1118,8 +1112,7 @@ __global__ void ethash_calculate_dag_item(uint32_t start)
     }
 }
 
-void ethash_generate_dag(
-    uint64_t dag_size, uint32_t gridSize, uint32_t blockSize, cudaStream_t stream)
+void ethash_generate_dag(uint64_t dag_size, uint32_t gridSize, uint32_t blockSize, cudaStream_t stream)
 {
     const uint32_t work = (uint32_t)(dag_size / sizeof(hash64_t));
     const uint32_t run = gridSize * blockSize;

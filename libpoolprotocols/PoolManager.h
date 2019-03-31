@@ -32,9 +32,8 @@ struct PoolSettings
     unsigned poolFailoverTimeout = 0;    // Return to primary pool after this number of minutes
     bool reportHashrate = false;         // Whether or not to report hashrate to pool
     unsigned hashRateInterval = 60;      // Interval in seconds among hashrate submissions
-    std::string hashRateId =
-        h256::random().hex(HexPrefix::Add);  // Unique identifier for HashRate submission
-    unsigned connectionMaxRetries = 3;       // Max number of connection retries
+    std::string hashRateId = h256::random().hex(HexPrefix::Add);  // Unique identifier for HashRate submission
+    unsigned connectionMaxRetries = 3;                            // Max number of connection retries
     unsigned benchmarkBlock = 0;    // Block number used by SimulateClient to test performances
     double benchmarkDiff = 1.0;     // Difficulty used by SimulateClient to test performances
     bool benchmarkVarDiff = false;  // Optional to specify if Simulate client should randomize

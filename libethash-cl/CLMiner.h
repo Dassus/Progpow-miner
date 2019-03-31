@@ -71,8 +71,8 @@ typedef struct
 
 struct CLKernelCacheItem
 {
-    CLKernelCacheItem(ClPlatformTypeEnum _platform, std::string _compute, std::string _name,
-        uint32_t _period, unsigned char* _bin, size_t _bin_sz)
+    CLKernelCacheItem(ClPlatformTypeEnum _platform, std::string _compute, std::string _name, uint32_t _period,
+        unsigned char* _bin, size_t _bin_sz)
       : platform(_platform), compute(_compute), name(_name), period(_period), bin(_bin), bin_sz(_bin_sz)
     {}
     ClPlatformTypeEnum platform;  // OpenCL Platform
@@ -99,7 +99,6 @@ public:
     void kick_miner() override;
 
 protected:
-
     bool initDevice() override;
 
     bool initEpoch_internal() override;

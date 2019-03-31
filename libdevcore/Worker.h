@@ -66,9 +66,9 @@ public:
 private:
     virtual void workLoop() = 0;
 
-    std::string m_name;   // Thread's name
+    std::string m_name;  // Thread's name
 
-    mutable Mutex x_work;                 // Lock 
+    mutable Mutex x_work;                 // Lock
     std::unique_ptr<std::thread> m_work;  // The thread running the work of derived class
     std::atomic<WorkerState> m_state = {WorkerState::Stopped};
 };

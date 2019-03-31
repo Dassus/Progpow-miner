@@ -7,7 +7,7 @@
 #include <libethcore/Miner.h>
 #include <libpoolprotocols/PoolURI.h>
 
-#define POOLCLIENT_MAX_MESSAGE_LENGTH (32*1024) // 32 kB maximum of one response from pool
+#define POOLCLIENT_MAX_MESSAGE_LENGTH (32 * 1024)  // 32 kB maximum of one response from pool
 
 extern boost::asio::io_service g_io_service;
 
@@ -28,8 +28,7 @@ struct Session
     // Total duration of session in minutes
     unsigned long duration()
     {
-        return (chrono::duration_cast<chrono::minutes>(chrono::steady_clock::now() - start))
-            .count();
+        return (chrono::duration_cast<chrono::minutes>(chrono::steady_clock::now() - start)).count();
     }
 
     // EthereumStratum (1 and 2)
@@ -39,8 +38,7 @@ struct Session
     // Length of extranonce in bytes
     unsigned int extraNonceSizeBytes = 0;
     // Next work target
-    h256 nextWorkBoundary =
-        h256("0x00000000ffff0000000000000000000000000000000000000000000000000000");
+    h256 nextWorkBoundary = h256("0x00000000ffff0000000000000000000000000000000000000000000000000000");
 
     // EthereumStratum (2 only)
     bool firstMiningSet = false;
@@ -50,7 +48,6 @@ struct Session
     string algo = "ethash";
     unsigned int epoch = 0;
     chrono::steady_clock::time_point lastTxStamp = chrono::steady_clock::now();
-
 };
 
 class PoolClient
@@ -78,14 +75,8 @@ public:
     virtual bool isConnected() { return m_connected.load(memory_order_relaxed); }
     virtual bool isPendingState() { return false; }
 
-    virtual bool isSubscribed()
-    {
-        return (m_session ? m_session->subscribed.load(memory_order_relaxed) : false);
-    }
-    virtual bool isAuthorized()
-    {
-        return (m_session ? m_session->authorized.load(memory_order_relaxed) : false);
-    }
+    virtual bool isSubscribed() { return (m_session ? m_session->subscribed.load(memory_order_relaxed) : false); }
+    virtual bool isAuthorized() { return (m_session ? m_session->authorized.load(memory_order_relaxed) : false); }
 
     virtual string ActiveEndPoint()
     {

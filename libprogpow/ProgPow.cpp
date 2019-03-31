@@ -5,8 +5,7 @@
 #define rnd() (kiss99(rnd_state))
 #define mix_src() ("mix[" + std::to_string(rnd() % PROGPOW_REGS) + "]")
 #define mix_dst() ("mix[" + std::to_string(mix_seq_dst[(mix_seq_dst_cnt++) % PROGPOW_REGS]) + "]")
-#define mix_cache() \
-    ("mix[" + std::to_string(mix_seq_cache[(mix_seq_cache_cnt++) % PROGPOW_REGS]) + "]")
+#define mix_cache() ("mix[" + std::to_string(mix_seq_cache[(mix_seq_cache_cnt++) % PROGPOW_REGS]) + "]")
 
 void swap(uint32_t& a, uint32_t& b)
 {
@@ -95,7 +94,7 @@ std::string ProgPow::getKern(uint64_t prog_seed, uint32_t dagelms, kernel_t kern
     {
         ret << "typedef struct __align__(16) {uint32_t s[PROGPOW_DAG_LOADS];} dag_t;\n";
         ret << "\n";
-        //ret << "// Inner loop for prog_seed " << prog_seed << "\n";
+        // ret << "// Inner loop for prog_seed " << prog_seed << "\n";
         ret << "__device__ __forceinline__ void progPowLoop(const uint32_t loop,\n";
         ret << "        uint32_t mix[PROGPOW_REGS],\n";
         ret << "        const dag_t *g_dag,\n";
@@ -108,7 +107,7 @@ std::string ProgPow::getKern(uint64_t prog_seed, uint32_t dagelms, kernel_t kern
         ret << "typedef struct __attribute__ ((aligned (16))) {uint32_t s[PROGPOW_DAG_LOADS];} "
                "dag_t;\n";
         ret << "\n";
-        //ret << "// Inner loop for prog_seed " << prog_seed << "\n";
+        // ret << "// Inner loop for prog_seed " << prog_seed << "\n";
         ret << "void progPowLoop(const uint32_t loop,\n";
         ret << "        uint32_t mix[PROGPOW_REGS],\n";
         ret << "        __global const dag_t *g_dag,\n";
@@ -127,7 +126,7 @@ std::string ProgPow::getKern(uint64_t prog_seed, uint32_t dagelms, kernel_t kern
     // lanes access sequential locations
     // Hard code mix[0] to guarantee the address for the global load depends on the result of the
     // load
-    //ret << "// global load\n";
+    // ret << "// global load\n";
     if (kern == KERNEL_CUDA)
         ret << "offset = SHFL(mix[0], loop & (PROGPOW_LANES-1), PROGPOW_LANES);\n";
     else
@@ -138,11 +137,11 @@ std::string ProgPow::getKern(uint64_t prog_seed, uint32_t dagelms, kernel_t kern
         ret << "offset = share[group_id];\n";
     }
 
-    ret << "offset %= " << dagelms <<"u;\n";
+    ret << "offset %= " << dagelms << "u;\n";
     ret << "offset = offset * PROGPOW_LANES + ((lane_id ^ loop) & (PROGPOW_LANES-1));\n";
-  
+
     ret << "data_dag = g_dag[offset];\n";
-    //ret << "// hack to prevent compiler from reordering LD and usage\n";
+    // ret << "// hack to prevent compiler from reordering LD and usage\n";
     if (kern == KERNEL_CUDA)
         ret << "if (hack_false) __threadfence_block();\n";
     else
@@ -157,7 +156,7 @@ std::string ProgPow::getKern(uint64_t prog_seed, uint32_t dagelms, kernel_t kern
             std::string src = mix_cache();
             std::string dest = mix_dst();
             uint32_t r = rnd();
-            //ret << "// cache load " << i << "\n";
+            // ret << "// cache load " << i << "\n";
             ret << "offset = " << src << " & (PROGPOW_CACHE_WORDS - 1) ;\n";
             ret << "data = c_dag[offset];\n";
             ret << merge(dest, "data", r);
@@ -176,14 +175,14 @@ std::string ProgPow::getKern(uint64_t prog_seed, uint32_t dagelms, kernel_t kern
             uint32_t r1 = rnd();
             std::string dest = mix_dst();
             uint32_t r2 = rnd();
-            //ret << "// random math " << i << "\n";
+            // ret << "// random math " << i << "\n";
             ret << math("data", src1_str, src2_str, r1);
             ret << merge(dest, "data", r2);
         }
     }
     // Consume the global load data at the very end of the loop, to allow fully latency hiding
-    //ret << "// consume global load data\n";
-    //ret << "// hack to prevent compiler from reordering LD and usage\n";
+    // ret << "// consume global load data\n";
+    // ret << "// hack to prevent compiler from reordering LD and usage\n";
     if (kern == KERNEL_CUDA)
         ret << "if (hack_false) __threadfence_block();\n";
     else
@@ -213,11 +212,9 @@ std::string ProgPow::merge(std::string a, std::string b, uint32_t r)
     case 1:
         return a + " = (" + a + " ^ " + b + ") * 33;\n";
     case 2:
-        return a + " = ROTL32(" + a + ", " + std::to_string(((r >> 16) % 31) + 1) + ") ^ " + b +
-               ";\n";
+        return a + " = ROTL32(" + a + ", " + std::to_string(((r >> 16) % 31) + 1) + ") ^ " + b + ";\n";
     case 3:
-        return a + " = ROTR32(" + a + ", " + std::to_string(((r >> 16) % 31) + 1) + ") ^ " + b +
-               ";\n";
+        return a + " = ROTR32(" + a + ", " + std::to_string(((r >> 16) % 31) + 1) + ") ^ " + b + ";\n";
     }
     return "#error\n";
 }
