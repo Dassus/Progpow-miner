@@ -147,7 +147,14 @@ Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection, FarmSett
     if (m_Settings.startNonce)
         m_nonce_scrambler = m_Settings.startNonce;
     else
-        shuffle();
+    {
+        // Given that all nonces are equally likely to solve the problem
+        // we could reasonably always start the nonce search ranges
+        // at a fixed place, but that would be boring. Provide a once
+        // per run randomized start place, without creating much overhead.
+        random_device engine;
+        m_nonce_scrambler = uniform_int_distribution<uint64_t>()(engine);
+    }
 
     // Start data collector timer
     // It should work for the whole lifetime of Farm
@@ -180,19 +187,6 @@ Farm::~Farm()
     m_miners.clear();
 
     DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Farm::~Farm() end");
-}
-
-/**
- * @brief Randomizes the nonce scrambler
- */
-void Farm::shuffle()
-{
-    // Given that all nonces are equally likely to solve the problem
-    // we could reasonably always start the nonce search ranges
-    // at a fixed place, but that would be boring. Provide a once
-    // per run randomized start place, without creating much overhead.
-    random_device engine;
-    m_nonce_scrambler = uniform_int_distribution<uint64_t>()(engine);
 }
 
 void Farm::setWork(WorkPackage const& _newWp)
@@ -228,10 +222,6 @@ void Farm::setWork(WorkPackage const& _newWp)
 
     m_currentWp = _newWp;
     m_telemetry.farm.totalJobs++;
-
-    // Check if we need to shuffle per work (ergodicity == 2)
-    if (m_Settings.ergodicity == 2 && m_currentWp.exSizeBytes == 0)
-        shuffle();
 
     uint64_t _startNonce;
     if (m_currentWp.exSizeBytes > 0)
