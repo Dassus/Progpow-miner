@@ -34,6 +34,8 @@ namespace dev
 {
 namespace eth
 {
+#define CUDA_STREAMS 2
+
 struct CUKernelCacheItem
 {
     CUKernelCacheItem(std::string _compute, uint32_t _period, char* _ptx, std::string _name)
@@ -79,7 +81,7 @@ private:
     CUmodule m_module;
     CUfunction m_kernel;
 
-    std::vector<volatile search_results*> m_search_results;
+    volatile search_results* m_search_results[CUDA_STREAMS];
 
     hash128_t* m_dag;
     hash64_t* m_dag_progpow;
@@ -87,8 +89,8 @@ private:
     hash32_t* d_pheader = NULL;
     uint64_t* d_ptarget = NULL;
 
-    std::vector<cudaStream_t> m_streams;
-    boost::dynamic_bitset<> m_active_streams;
+    cudaStream_t m_streams[CUDA_STREAMS];
+    bool m_active_streams[CUDA_STREAMS];
 
     CUSettings m_settings;
 
