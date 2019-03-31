@@ -27,7 +27,7 @@
 * [Build](#build)
     * [Continuous Integration and development builds](#continuous-integration-and-development-builds)
     * [Building from source](#building-from-source)
-* [Maintainers & Authors](#maintainers--authors)
+* [Contributors](#contributors)
 * [Contribute](#contribute)
 * [F.A.Q.](#faq)
 
@@ -66,9 +66,10 @@ Check our [samples](docs/POOL_EXAMPLES_ETH.md) to see how to connect to differen
 
 ### Continuous Integration and development builds
 
-| CI            | OS            | Status  | Development builds |
-| ------------- | ------------- | -----   | -----------------  |
-| [AppVeyor]    | Windows       | [![AppVeyor](https://img.shields.io/appveyor/ci/jean-m-cyr/ethminer/master.svg)][AppVeyor] | ✓ Build artifacts available for all PRs and branches |
+| CI           | OS      | Status  | Development builds |
+| ------------ | ------- | -----   | -----------------  |
+| [AppVeyor]   | Windows | [![AppVeyor](https://img.shields.io/appveyor/ci/jean-m-cyr/ethminer/master.svg)][AppVeyor] | ✓ Build artifacts available for all PRs and master |
+| CircleCI     | Linux   | [![CircleCI](https://circleci.com/gh/miscellaneousbits/ethminer/tree/master.svg?style=svg)](https://circleci.com/gh/miscellaneousbits/ethminer/tree/master) | |
 
 The AppVeyor system automatically builds a Windows .exe for every commit. The latest version is always available [on the landing page](https://ci.appveyor.com/project/jean-m-cyr/ethminer) or you can [browse the history](https://ci.appveyor.com/project/jean-m-cyr/ethminer/history) to access previous builds.
 
@@ -78,24 +79,10 @@ To download the .exe on a build under `Job name` select the CUDA version you use
 
 See [docs/BUILD.md](docs/BUILD.md) for build/compilation details.
 
-## Maintainers & Authors
+## Contributors
 
-[![Gitter](https://img.shields.io/gitter/room/ethereum-mining/ethminer.svg)][Gitter]
-
-The list of current and past maintainers, authors and contributors to the ethminer project.
-Ordered alphabetically. [Contributors statistics since 2015-08-20].
-
-| Name                  | Contact                                                      |
-| --------------------- | ------------------------------------------------------------ |
-| Andrea Lanfranchi     | [@AndreaLanfranchi](https://github.com/AndreaLanfranchi)     |
-| EoD                   | [@EoD](https://github.com/EoD)                               |
-| Genoil                | [@Genoil](https://github.com/Genoil)                         |
-| goobur                | [@goobur](https://github.com/goobur)                         |
-| Marius van der Wijden | [@MariusVanDerWijden](https://github.com/MariusVanDerWijden) |
-| Paweł Bylica          | [@chfast](https://github.com/chfast)                         |
-| Philipp Andreas       | [@smurfy](https://github.com/smurfy)                         |
-| Stefan Oberhumer      | [@StefanOberhumer](https://github.com/StefanOberhumer)       |
-
+The list of current and past maintainers, authors and contributors.
+[Contributor statistics]
 
 ## Contribute
 
@@ -126,25 +113,13 @@ The new WDDM 2.x driver on Windows 10 uses a different way of addressing the GPU
 
 Because of the GDDR5X memory, which can't be fully utilized for ETH mining (yet).
 
-### Are AMD cards also affected by slowdowns with increasing DAG size?
-
-Only GCN 1.0 GPUs (78x0, 79x0, 270, 280), but in a different way. You'll see that on each new epoch (30K blocks), the hashrate will go down a little bit.
-
-### Can I still mine ETH with my 2GB GPU?
+### Can I still mine ETH with my 2 or 3 GB GPU?
 
 Not really, your VRAM must be above the DAG size (Currently about 2.15 GB.) to get best performance. Without it severe hash loss will occur.
 
 ### What are the optimal launch parameters?
 
 The default parameters are fine in most scenario's (CUDA). For OpenCL it varies a bit more. Just play around with the numbers and use powers of 2. GPU's like powers of 2.
-
-### What does the `--cuda-parallel-hash` flag do?
-
-[@davilizh](https://github.com/davilizh) made improvements to the CUDA kernel hashing process and added this flag to allow changing the number of tasks it runs in parallel. These improvements were optimised for GTX 1060 GPUs which saw a large increase in hashrate, GTX 1070 and GTX 1080/Ti GPUs saw some, but less, improvement. The default value is 4 (which does not need to be set with the flag) and in most cases this will provide the best performance.
-
-### What is ethminer's relationship with [Genoil's fork]?
-
-[Genoil's fork] was the original source of this version, but as Genoil is no longer consistently maintaining that fork it became almost impossible for developers to get new code merged there. In the interests of progressing development without waiting for reviews this fork should be considered the active one and Genoil's as legacy code.
 
 ### Can I CPU Mine?
 
@@ -177,8 +152,8 @@ Error: Insufficient CUDA driver: 9010
 
 You have to upgrade your Nvidia drivers. On Linux, install `nvidia-396` package or newer.
 
-
-[AppVeyor]: https://ci.appveyor.com/project/miscellaneousbits/ethminer
-[Contributors statistics since 2015-08-20]: https://github.com/miscellaneousbits/ethminer/graphs/contributors?from=2015-08-20
+[AppVeyor]: https://ci.appveyor.com/project/jean-m-cyr/ethminer
+[CircleCI}]: https://circleci.com/gh/miscellaneousbits/ethminer
+[Contributor statistics]: https://github.com/miscellaneousbits/ethminer/graphs/contributors
 [Gitter]: https://gitter.im/ethereum-mining/ethminer
 [Releases]: https://github.com/miscellaneousbits/ethminer/releases
