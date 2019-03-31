@@ -255,8 +255,6 @@ CLMiner::CLMiner(unsigned _index, CLSettings _settings, DeviceDescriptor& _devic
 
 void CLMiner::workLoop()
 {
-    DEV_BUILD_LOG_PROGRAMFLOW(cllog, "cl-" << m_index << " CLMiner::workLoop() begin");
-
     if (!initDevice())
         return;
 
@@ -270,14 +268,10 @@ void CLMiner::workLoop()
         string _what = ethCLErrorHelper("OpenCL Error", _e);
         throw std::runtime_error(_what);
     }
-
-    DEV_BUILD_LOG_PROGRAMFLOW(cllog, "cl-" << m_index << " CLMiner::workLoop() end");
 }
 
 bool CLMiner::loadProgPoWKernel(uint32_t _seed)
 {
-    DEV_BUILD_LOG_PROGRAMFLOW(cllog, "cl-" << m_index << " CLMiner::loadProgPoWKernel() begin");
-
     // Get ptx from cache
     unsigned char* _bin;
     size_t _bin_sz;
@@ -337,7 +331,6 @@ bool CLMiner::loadProgPoWKernel(uint32_t _seed)
         return false;
     }
 
-    DEV_BUILD_LOG_PROGRAMFLOW(cllog, "cl-" << m_index << " CLMiner::loadProgPoWKernel() end");
     return true;
 }
 

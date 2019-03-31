@@ -167,8 +167,6 @@ bool CUDAMiner::initEpoch_internal()
 
 void CUDAMiner::workLoop()
 {
-    DEV_BUILD_LOG_PROGRAMFLOW(cudalog, "cu-" << m_index << " CUDAMiner::workLoop() begin");
-
     m_search_results.resize(m_settings.streams);
     m_streams.resize(m_settings.streams);
     m_active_streams.resize(m_settings.streams, false);
@@ -187,13 +185,10 @@ void CUDAMiner::workLoop()
         _what.append(_e.what());
         throw std::runtime_error(_what);
     }
-
-    DEV_BUILD_LOG_PROGRAMFLOW(cudalog, "cu-" << m_index << " CUDAMiner::workLoop() end");
 }
 
 bool CUDAMiner::loadProgPoWKernel(uint32_t _seed)
 {
-    DEV_BUILD_LOG_PROGRAMFLOW(cudalog, "cu-" << m_index << " CUDAMiner::loadProgPoWKernel() begin");
     unloadProgPoWKernel();
 
     // Get ptx from cache
@@ -240,7 +235,6 @@ bool CUDAMiner::loadProgPoWKernel(uint32_t _seed)
         CUDA_SAFE_CALL(cudaMalloc((void**)&d_ptarget, sizeof(uint64_t)));
     }
 
-    DEV_BUILD_LOG_PROGRAMFLOW(cudalog, "cu-" << m_index << " CUDAMiner::loadProgPoWKernel() end");
     return true;
 }
 
