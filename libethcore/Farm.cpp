@@ -46,8 +46,6 @@ Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection, FarmSett
     m_collectTimer(g_io_service),
     m_DevicesCollection(_DevicesCollection)
 {
-    DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Farm::Farm() begin");
-
     m_this = this;
 
     // Init HWMON if needed
@@ -162,14 +160,10 @@ Farm::Farm(std::map<std::string, DeviceDescriptor>& _DevicesCollection, FarmSett
     m_collectTimer.expires_from_now(boost::posix_time::milliseconds(m_collectInterval));
     m_collectTimer.async_wait(
         m_io_strand.wrap(boost::bind(&Farm::collectData, this, boost::asio::placeholders::error)));
-
-    DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Farm::Farm() end");
 }
 
 Farm::~Farm()
 {
-    DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Farm::~Farm() begin");
-
     // Stop data collector (before monitors !!!)
     m_collectTimer.cancel();
 
@@ -185,8 +179,6 @@ Farm::~Farm()
         wrap_nvml_destroy(nvmlh);
 
     m_miners.clear();
-
-    DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Farm::~Farm() end");
 }
 
 void Farm::setWork(WorkPackage const& _newWp)
@@ -252,7 +244,6 @@ bool Farm::start()
     if (m_isMining.load(std::memory_order_relaxed))
         return true;
 
-    DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Farm::start() begin");
     Guard l(x_minerWork);
 
     // Start all subscribed miners if none yet
@@ -302,7 +293,6 @@ bool Farm::start()
         m_isMining.store(true, std::memory_order_relaxed);
     }
 
-    DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Farm::start() end");
     return m_isMining.load(std::memory_order_relaxed);
 }
 
@@ -311,7 +301,6 @@ bool Farm::start()
  */
 void Farm::stop()
 {
-    DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Farm::stop() begin");
     // Avoid re-entering if not actually mining.
     // This, in fact, is also called by destructor
     if (isMining())
@@ -332,7 +321,6 @@ void Farm::stop()
             }
         }
     }
-    DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Farm::stop() end");
 }
 
 /**

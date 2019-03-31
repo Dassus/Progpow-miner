@@ -30,8 +30,6 @@ using namespace dev;
 
 void Worker::startWorking()
 {
-    DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Worker::startWorking() begin");
-
     // Can't start an already started thread
     if (m_state.load(memory_order_relaxed) != WorkerState::Stopped)
         return;
@@ -69,7 +67,6 @@ void Worker::startWorking()
 
     while (m_state == WorkerState::Starting)
         this_thread::sleep_for(chrono::microseconds(20));
-    DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Worker::startWorking() end");
 }
 
 void Worker::stopWorking()
@@ -80,12 +77,10 @@ void Worker::stopWorking()
 
 Worker::~Worker()
 {
-    DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Worker::~Worker() begin");
     if (m_work->joinable())
     {
         m_state.store(WorkerState::Stopping, memory_order_relaxed);
         m_work->join();
         m_work.reset();
     }
-    DEV_BUILD_LOG_PROGRAMFLOW(cnote, "Worker::~Worker() end");
 }

@@ -35,23 +35,15 @@
 /// The logging system's current verbosity.
 #define LOG_JSON 1
 #define LOG_PER_GPU 2
+#if !defined(_DEVELOPER)
+#define LOG_NEXT 4
+#else
 #define LOG_CONNECT 32
 #define LOG_SWITCH 64
 #define LOG_SUBMIT 128
-#define LOG_PROGRAMFLOW 256
-#define LOG_COMPILE 512
-#define LOG_KERNEL_TIMES 1024
-#define LOG_NEXT 2048
-
-#if _DEVELOPER
-#define DEV_BUILD_LOG_PROGRAMFLOW(_S, _V) \
-    if (g_logOptions & LOG_PROGRAMFLOW)   \
-    {                                     \
-        _S << _V;                         \
-    }                                     \
-    ((void)(0))
-#else
-#define DEV_BUILD_LOG_PROGRAMFLOW(_S, _V) ((void)(0))
+#define LOG_COMPILE 256
+#define LOG_KERNEL_TIMES 512
+#define LOG_NEXT 1024
 #endif
 
 extern unsigned g_logOptions;
