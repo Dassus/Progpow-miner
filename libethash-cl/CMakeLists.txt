@@ -10,7 +10,7 @@ add_custom_command(
     -DBIN2H_VARIABLE_NAME="cl_ethash_miner_kernel"
     -DBIN2H_HEADER_FILE="${CMAKE_CURRENT_BINARY_DIR}/ethash_miner_kernel.cpp"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/asc2cpp.cmake"
-    COMMENT "Generating OpenCL Ethash Kernel Byte Array"
+    COMMENT "Generating OpenCL Ethash kernel string"
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/ethash_miner_kernel.cl"
 )
 
@@ -21,7 +21,7 @@ add_custom_command(
     -DBIN2H_VARIABLE_NAME="cl_progpow_miner_kernel"
     -DBIN2H_HEADER_FILE="${CMAKE_CURRENT_BINARY_DIR}/progpow_miner_kernel.cpp"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/asc2cpp.cmake"
-    COMMENT "Generating OpenCL ProgPoW Kernel Byte Array"
+    COMMENT "Generating OpenCL ProgPoW kernel string"
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/progpow_miner_kernel.cl"
 )
 

@@ -8,7 +8,7 @@ add_custom_command(
     -DBIN2H_VARIABLE_NAME="cu_progpow_miner_kernel"
     -DBIN2H_HEADER_FILE="${CMAKE_CURRENT_BINARY_DIR}/progpow_miner_kernel.cpp"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/../libethash-cl/asc2cpp.cmake"
-    COMMENT "Generating CUDA ProgPoW Kernel Byte Array"
+    COMMENT "Generating CUDA ProgPoW kernel string"
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/progpow_miner_kernel.cu"
 )
 
