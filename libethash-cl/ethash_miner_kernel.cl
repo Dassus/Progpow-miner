@@ -264,7 +264,7 @@ __kernel void ethash_search(
 
     if (g_output->abort)
         return;
-    else if (get_local_id(0) == 0)
+    if (get_local_id(0) == 0)
         atomic_inc(&g_output->rounds);
 
     __global hash128_t const* g_dag = (__global hash128_t const*) _g_dag;
