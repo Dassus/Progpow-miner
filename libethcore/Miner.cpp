@@ -301,7 +301,7 @@ void Miner::minerLoop()
     }
 }
 
-void Miner::updateHashRate(uint32_t _hashes, uint64_t _microseconds, float _alpha) noexcept
+void Miner::updateHashRate(uint32_t _hashes, uint64_t _microseconds) noexcept
 {
     // Signal we've received an update
     m_hrLive.store(true, memory_order_relaxed);
@@ -313,8 +313,7 @@ void Miner::updateHashRate(uint32_t _hashes, uint64_t _microseconds, float _alph
         return;
 
     float instantHr = float(_hashes * 1.0e6f) / _microseconds;
-    float avgHr = (m_hr.load(memory_order_relaxed) * _alpha) + (instantHr * (1.0f - _alpha));
-    m_hr.store(avgHr, memory_order_relaxed);
+    m_hr.store(instantHr, memory_order_relaxed);
 }
 
 void Miner::invokeAsyncCompile(uint32_t _seed, bool _wait)

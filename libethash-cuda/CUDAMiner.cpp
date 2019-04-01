@@ -556,7 +556,7 @@ void CUDAMiner::ethash_search()
         }
 
         // Update the hash rate
-        updateHashRate(m_workHashes, m_workSearchDuration, 0.1f);
+        updateHashRate(m_workHashes, m_workSearchDuration);
 
         if (!m_active_streams[0] && !m_active_streams[1])
             break;

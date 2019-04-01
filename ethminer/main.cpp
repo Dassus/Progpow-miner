@@ -321,11 +321,6 @@ public:
 
         app.add_set("--cl-local-work", m_CLSettings.localWorkSize, {64, 128, 256}, "", true);
 
-
-#if _BINKERN
-        app.add_flag("--cl-nobin", m_CLSettings.noBinary, "");
-#endif
-
 #endif
 
 #if _CUDA
@@ -336,6 +331,7 @@ public:
             ->check(CLI::Range(32, 131072));
 
         app.add_set("--cuda-block-size,--cu-block-size", m_CUSettings.blockSize, {32, 64, 128, 256, 512}, "", true);
+
 #endif
 
 #if _CPU
@@ -878,12 +874,7 @@ public:
                  << "                        Set the global work size multiplier" << endl
                  << "                        Value will be adjusted to nearest power of 2" << endl
                  << "    --cl-local-work     UINT {64,128,256} Default = " << m_CLSettings.localWorkSize << endl
-                 << "                        Set the local work size" << endl
-#if _BINKERN
-                 << "    --cl-nobin          FLAG" << endl
-                 << "                        Use openCL kernel. Do not load binary kernel" << endl
-#endif
-                 << endl;
+                 << "                        Set the local work size" << endl;
         }
 #endif
 

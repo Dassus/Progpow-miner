@@ -718,7 +718,6 @@ bool CLMiner::initDevice()
         m_hwmoninfo.deviceType = HwMonitorInfoType::NVIDIA;
         m_hwmoninfo.devicePciId = m_deviceDescriptor.uniqueId;
         m_hwmoninfo.deviceIndex = -1;  // Will be later on mapped by nvml (see Farm() constructor)
-        m_settings.noBinary = true;
     }
     else if (m_deviceDescriptor.clPlatformType == ClPlatformTypeEnum::Amd)
     {
@@ -732,7 +731,6 @@ bool CLMiner::initDevice()
         m_hwmoninfo.deviceType = HwMonitorInfoType::UNKNOWN;
         m_hwmoninfo.devicePciId = m_deviceDescriptor.uniqueId;
         m_hwmoninfo.deviceIndex = -1;  // Will be later on mapped by nvml (see Farm() constructor)
-        m_settings.noBinary = true;
     }
     else
     {
@@ -823,51 +821,6 @@ bool CLMiner::initDevice()
 #endif
         throw std::runtime_error("Unable to build Ethash Kernel");
     }
-
-#if _BINKERN
-    /* If we have a binary kernel, we load it in tandem with the opencl,
-       that way, we can use the dag generate opencl code and fall back on
-       the default kernel if loading fails for whatever reason */
-
-    if (!m_settings.noBinary)
-    {
-        vector<unsigned char> bin_data;
-        std::stringstream fname_strm;
-
-        /* Open kernels/ethash_{devicename}_lws{local_work_size}.bin */
-        std::string device_name = m_deviceDescriptor.clName;
-        std::transform(device_name.begin(), device_name.end(), device_name.begin(), ::tolower);
-        fname_strm << boost::dll::program_location().parent_path().string() << "/kernels/ethash_" << device_name
-                   << "_lws" << m_settings.localWorkSize << ".bin";
-        cllog << "Loading binary kernel " << fname_strm.str();
-
-        try
-        {
-            std::ifstream kernel_file;
-            kernel_file.open(fname_strm.str(), ios::in | ios::binary);
-            if (!kernel_file.good())
-                throw std::runtime_error("File invalid or not found");
-
-            /* Load the data vector with file data */
-            kernel_file.unsetf(std::ios::skipws);
-            bin_data.insert(bin_data.begin(), std::istream_iterator<unsigned char>(kernel_file),
-                std::istream_iterator<unsigned char>());
-
-            /* Setup the program */
-            cl::Program::Binaries blobs({bin_data});
-            cl::Program program(m_context, {m_device}, blobs);
-            program.build({m_device}, options);
-            m_ethash_search_kernel = cl::Kernel(program, "ethash_search");
-            m_ethash_search_kernel.setArg(0, m_searchBuffer);
-            m_deviceDescriptor.clBinaryKernel = true;
-        }
-        catch (std::exception const& _ex)
-        {
-            cwarn << "Unexpected error : " << _ex.what();
-            cwarn << "Falling back to OpenCL kernel";
-        }
-    }
-#endif
 
     return true;
 }

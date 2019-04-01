@@ -114,7 +114,6 @@ struct CUSettings
 struct CLSettings
 {
     vector<unsigned> devices;
-    bool noBinary = false;
     unsigned globalWorkSize = 0;
     unsigned globalWorkSizeMultiplier = 32768;
     unsigned localWorkSize = 256;
@@ -457,7 +456,7 @@ protected:
     void minerLoop();
 
     // Collects and averages (EMA) hashrate
-    void updateHashRate(uint32_t _hashes, uint64_t _microseconds, float _alpha = 0.85f) noexcept;
+    void updateHashRate(uint32_t _hashes, uint64_t _microseconds) noexcept;
 
     static unsigned s_minersCount;   // Total Number of Miners
     static unsigned s_dagLoadMode;   // Way dag should be loaded
