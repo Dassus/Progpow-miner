@@ -80,7 +80,7 @@ message("-------------------------------------------------------------------")
 message("")
 
 include(EthCompilerSettings)
-if(UNIX AND NOT APPLE)
+if(UNIX)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++")
 endif()
 

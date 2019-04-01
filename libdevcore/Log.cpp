@@ -20,10 +20,6 @@
 #include <map>
 #include <thread>
 
-#ifdef __APPLE__
-#include <pthread.h>
-#endif
-
 #include "Guards.h"
 
 using namespace std;
@@ -80,7 +76,7 @@ ThreadLocalLogName g_logThreadName("main");
 
 string dev::getThreadName()
 {
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__)
     char buffer[128];
     pthread_getname_np(pthread_self(), buffer, 127);
     buffer[127] = 0;
@@ -94,8 +90,6 @@ void dev::setThreadName(char const* _n)
 {
 #if defined(__linux__)
     pthread_setname_np(pthread_self(), _n);
-#elif defined(__APPLE__)
-    pthread_setname_np(_n);
 #else
     ThreadLocalLogName::name = _n;
 #endif

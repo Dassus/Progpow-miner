@@ -43,9 +43,7 @@ along with ethminer.  If not, see <http://www.gnu.org/licenses/>.
 
 
 /* Sanity check for defined OS */
-#if defined(__APPLE__) || defined(__MACOSX)
-/* MACOSX */
-#elif defined(__linux__)
+#if defined(__linux__)
 /* linux */
 #elif defined(_WINDOWS) || defined(_WIN32)
 /* windows */
@@ -66,9 +64,7 @@ using namespace eth;
  */
 static size_t getTotalPhysAvailableMemory()
 {
-#if defined(__APPLE__) || defined(__MACOSX)
-#error "TODO: Function CPUMiner getTotalPhysAvailableMemory() on MAXOSX not implemented"
-#elif defined(__linux__)
+#if defined(__linux__)
     long pages = sysconf(_SC_AVPHYS_PAGES);
     if (pages == -1L)
     {
@@ -112,9 +108,7 @@ unsigned CPUMiner::getNumDevices()
         }
     }
     return cpus;
-#elif defined(__APPLE__) || defined(__MACOSX)
-#error "TODO: Function CPUMiner::getNumDevices() on MAXOSX not implemented"
-#elif defined(__linux__)
+#if defined(__linux__)
     long cpus_available;
     cpus_available = sysconf(_SC_NPROCESSORS_ONLN);
     if (cpus_available == -1L)
@@ -158,9 +152,7 @@ bool CPUMiner::initDevice()
     cpulog << "Using CPU: " << m_deviceDescriptor.cpCpuNumber << " " << m_deviceDescriptor.cuName
            << " Memory : " << dev::getFormattedMemory((double)m_deviceDescriptor.totalMemory);
 
-#if defined(__APPLE__) || defined(__MACOSX)
-#error "TODO: Function CPUMiner::initDevice() on MAXOSX not implemented"
-#elif defined(__linux__)
+#if defined(__linux__)
     cpu_set_t cpuset;
     int err;
 
