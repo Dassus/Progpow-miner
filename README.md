@@ -154,6 +154,6 @@ You have to upgrade your Nvidia drivers. On Linux, install `nvidia-396` package 
 
 [AppVeyor]: https://ci.appveyor.com/project/jean-m-cyr/ethminer
 [CircleCI}]: https://circleci.com/gh/miscellaneousbits/ethminer
-[Contributor statistics]: https://github.com/miscellaneousbits/ethminer/graphs/contributors
+[Contributor statistics]: https://github.com/miscellaneousbits/ethminer/graphs/contributors?type=a
 [Gitter]: https://gitter.im/ethereum-mining/ethminer
 [Releases]: https://github.com/miscellaneousbits/ethminer/releases
