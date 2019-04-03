@@ -1,6 +1,6 @@
 version: 2
 jobs:
-  build:
+  build92:
     docker:
       - image: nvidia/cuda:9.2-devel-ubuntu18.04
     steps:
@@ -14,9 +14,23 @@ jobs:
       - store_artifacts:
           path: build/ethminer/ethminer
           destination: ethminer
+  build100:
+    docker:
+      - image: nvidia/cuda:10.0-devel-ubuntu18.04
+    steps:
+      - run: apt-get update && apt-get install -qy git cmake mesa-common-dev libidn11-dev python3-requests python3-git
+
+      - checkout
+      - run: git submodule update --init --recursive
+
+      - run: cmake -DHUNTER_JOBS_NUMBER=4 -DCUDA=ON -DOPENCL=ON -DAPI=ON -H. -Bbuild
+      - run: cmake --build build -- -j4
+      - store_artifacts:
+          path: build/ethminer/ethminer
+          destination: ethminer
   buildclonly:
     docker:
-      - image: nvidia/cuda:9.2-devel-ubuntu18.04
+      - image: ubuntu:18.04
     steps:
       - run: apt-get update && apt-get install -qy git cmake mesa-common-dev libidn11-dev python3-requests python3-git
 
@@ -28,24 +42,10 @@ jobs:
       - store_artifacts:
           path: build/ethminer/ethminer
           destination: ethminer
-  buildcuonly:
-    docker:
-      - image: nvidia/cuda:9.2-devel-ubuntu18.04
-    steps:
-      - run: apt-get update && apt-get install -qy git cmake mesa-common-dev libidn11-dev python3-requests python3-git
-
-      - checkout
-      - run: git submodule update --init --recursive
-
-      - run: cmake -DHUNTER_JOBS_NUMBER=4 -DCUDA=ON -DOPENCL=OFF -DAPI=ON -H. -Bbuild
-      - run: cmake --build build -- -j4
-      - store_artifacts:
-          path: build/ethminer/ethminer
-          destination: ethminer
 workflows:
   version: 2
   buildall:
     jobs:
-      - build
+      - build92
+      - build100
       - buildclonly
-      - buildcuonly
