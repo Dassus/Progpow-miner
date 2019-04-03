@@ -276,13 +276,6 @@ struct TelemetryType
         _ret << EthGreen << setw(hoursSize) << hours.count() << ":" << setfill('0') << setw(2) << minutes.count()
              << EthReset << EthWhiteBold << " " << farm.solutions.str() << EthReset << " ";
 
-        /*
-        Github : @AndreaLanfranchi
-        I whish I could simply make use of getFormattedHashes but in this case
-        this would be misleading as total hashrate could be of a different order
-        of magnitude than the hashrate expressed by single devices.
-        Thus I need to set the vary same scaling index on the farm and on devices
-        */
         static string suffixes[] = {"h", "Kh", "Mh", "Gh"};
         float hr = farm.hashrate;
         int magnitude = 0;
@@ -293,7 +286,7 @@ struct TelemetryType
         }
 
         _ret << EthTealBold << std::fixed << std::setprecision(2) << hr << " " << suffixes[magnitude] << EthReset
-             << " { ";
+             << " - ";
 
         int i = -1;                 // Current miner index
         int m = miners.size() - 1;  // Max miner index
@@ -316,10 +309,8 @@ struct TelemetryType
 
             // Separator if not the last miner index
             if (i < m)
-                _ret << " | ";
+                _ret << ", ";
         }
-        _ret << " }";
-
         return _ret.str();
     };
 };
