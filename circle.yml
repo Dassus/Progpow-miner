@@ -11,9 +11,10 @@ jobs:
 
       - run: cmake -DHUNTER_JOBS_NUMBER=4 -DCUDA=ON -DOPENCL=ON -DAPI=ON -H. -Bbuild
       - run: cmake --build build -- -j4
+      - run: mkdir artifacts
+      - run: tar -zcvf artifacts/ethminer-$CIRCLECI_TAG-cuda9.2-linux-amd64.tgz -C build/ethminer ethminer
       - store_artifacts:
-          path: build/ethminer/ethminer
-          destination: ethminer
+          path: artifacts
   build100:
     docker:
       - image: nvidia/cuda:10.0-devel-ubuntu18.04
@@ -25,9 +26,10 @@ jobs:
 
       - run: cmake -DHUNTER_JOBS_NUMBER=4 -DCUDA=ON -DOPENCL=ON -DAPI=ON -H. -Bbuild
       - run: cmake --build build -- -j4
+      - run: mkdir artifacts
+      - run: tar -zcvf artifacts/ethminer-$CIRCLECI_TAG-cuda10.0-linux-amd64.tgz -C build/ethminer ethminer
       - store_artifacts:
-          path: build/ethminer/ethminer
-          destination: ethminer
+          path: artifacts
   buildclonly:
     docker:
       - image: ubuntu:18.04
@@ -39,9 +41,10 @@ jobs:
 
       - run: cmake -DHUNTER_JOBS_NUMBER=4 -DCUDA=OFF -DOPENCL=ON -DAPI=ON -H. -Bbuild
       - run: cmake --build build -- -j4
+      - run: mkdir artifacts
+      - run: tar -zcvf artifacts/ethminer-$CIRCLECI_TAG-opencl-linux-amd64.tgz -C build/ethminer ethminer
       - store_artifacts:
-          path: build/ethminer/ethminer
-          destination: ethminer
+          path: artifacts
 workflows:
   version: 2
   buildall:
